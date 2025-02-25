@@ -8,22 +8,36 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="bubble">
-    <div id="bubble-inner"></div>
+  <!-- Close button -->
+  <div id="close-button" title="Close SandyWhisper">×</div>
+  
+  <!-- Main container for both bubble and expanded panel -->
+  <div id="app-container" class="collapsed">
+    <!-- Expanded panel appears to the left of the bubble -->
+    <div id="expanded-panel">
+      <div id="frequency-animation">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+      </div>
+      <div id="status-text">Ready to dictate</div>
+    </div>
+    
+    <!-- Bubble on the right -->
+    <div id="bubble">
+      <div id="drag-handle"></div>
+      <div id="bubble-inner"></div>
+    </div>
   </div>
   
-  <div id="expanded-panel" class="hidden">
-    <div id="frequency-animation">
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-    </div>
-    <div id="status-text">Ready to dictate</div>
+  <!-- For development/testing only - will be hidden in production -->
+  <div id="debug-panel" class="hidden">
+    <div id="transcribed-text"></div>
   </div>
   
   <script src="renderer.js"></script>

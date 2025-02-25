@@ -8,9 +8,17 @@ const { contextBridge, ipcRenderer } = require('electron');
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld(
   'api', {
+    // Window control functions
     toggleDictation: () => ipcRenderer.send('toggle-dictation'),
-    expandWindow: (dimensions) => ipcRenderer.send('expand-window', dimensions),
-    collapseWindow: () => ipcRenderer.send('collapse-window'),
+    moveWindow: (moveX, moveY) => ipcRenderer.send('move-window', { moveX, moveY }),
+    closeApp: () => ipcRenderer.send('close-app'),
+    
+    // Audio recording and transcription functions
+    startRecording: () => ipcRenderer.invoke('start-recording'),
+    stopRecordingAndTranscribe: () => ipcRenderer.invoke('stop-recording-and-transcribe'),
+    
+    // Keyboard simulation
+    typeText: (text) => ipcRenderer.invoke('type-text', text),
     
     // Receive toggle-dictation event from main process
     onToggleDictation: (callback) => {

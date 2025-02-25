@@ -11,8 +11,23 @@ body {
     sans-serif;
   overflow: hidden;
   background: transparent;
-  -webkit-app-region: drag; /* Make the window draggable */
   user-select: none;
+  position: relative;
+  width: 270px; /* Fixed width to accommodate expanded state */
+  height: 70px;
+}
+
+/* App container - holds both bubble and panel */
+#app-container {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 270px; /* Same as body width */
+  height: 50px;
+  display: flex;
+  justify-content: flex-end; /* Align content to the right */
+  align-items: center;
+  transition: width 0.3s ease-out;
 }
 
 /* Main bubble */
@@ -22,20 +37,26 @@ body {
   border-radius: 50%;
   background: rgba(20, 20, 20, 0.7);
   cursor: pointer;
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  -webkit-app-region: no-drag; /* Allow clicking */
+  z-index: 10;
+  position: relative; /* Keep bubble positioned on the right */
+  flex-shrink: 0; /* Prevent bubble from shrinking */
 }
 
 #bubble:hover {
   transform: scale(1.05);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+#bubble.dragging {
+  transform: scale(1.05);
+  cursor: grabbing;
+  opacity: 0.8;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
 #bubble-inner {
@@ -52,25 +73,53 @@ body {
   animation: pulse 1.5s infinite;
 }
 
+/* Close button */
+#close-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 75, 75, 0.8);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  z-index: 100;
+}
+
+#close-button:hover {
+  background: rgba(255, 55, 55, 1);
+  transform: scale(1.1);
+}
+
 /* Expanded panel */
 #expanded-panel {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  width: 250px;
+  flex-grow: 1; /* Take up available space */
   height: 50px;
   background: rgba(20, 20, 20, 0.8);
   border-radius: 25px;
   display: flex;
   align-items: center;
   padding: 0 15px;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  margin-right: 10px; /* Space between panel and bubble */
+  transition: opacity 0.3s ease, width 0.3s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  overflow: hidden; /* Hide content when collapsed */
+  width: 200px; /* Fixed width to show when expanded */
+  opacity: 1;
 }
 
-#expanded-panel.hidden {
+#app-container.collapsed #expanded-panel {
+  width: 0;
+  padding: 0;
+  margin-right: 0;
   opacity: 0;
-  pointer-events: none;
 }
 
 /* Status text */
@@ -86,6 +135,7 @@ body {
   display: flex;
   align-items: center;
   height: 30px;
+  min-width: 80px;
 }
 
 .bar {
@@ -119,4 +169,44 @@ body {
 .bar:nth-child(5) { animation: equalize 0.8s infinite; animation-delay: 0.4s; }
 .bar:nth-child(6) { animation: equalize 1.0s infinite; animation-delay: 0.5s; }
 .bar:nth-child(7) { animation: equalize 1.2s infinite; animation-delay: 0.6s; }
-.bar:nth-child(8) { animation: equalize 0.9s infinite; animation-delay: 0.7s; } 
+.bar:nth-child(8) { animation: equalize 0.9s infinite; animation-delay: 0.7s; }
+
+/* Drag handler - invisible area on the bubble to handle dragging */
+#drag-handle {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  cursor: grab;
+  z-index: 20;
+}
+
+#drag-handle.dragging {
+  cursor: grabbing;
+}
+
+/* Debug panel - visible only in development mode */
+#debug-panel {
+  position: absolute;
+  top: 80px; /* Position below the main UI */
+  right: 10px;
+  width: 250px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: rgba(20, 20, 20, 0.8);
+  border-radius: 8px;
+  padding: 10px;
+  color: white;
+  font-size: 12px;
+  transition: opacity 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+#debug-panel.hidden {
+  display: none;
+}
+
+#transcribed-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+} 
