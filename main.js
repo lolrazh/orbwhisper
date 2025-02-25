@@ -122,15 +122,16 @@ ipcMain.on('move-window', (event, { moveX, moveY }) => {
     const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
     const [winWidth, winHeight] = mainWindow.getSize();
     
-    // Calculate new position
-    let newX = x + moveX;
-    let newY = y + moveY;
+    // Calculate new position - round to nearest pixel to avoid sub-pixel rendering issues
+    let newX = Math.round(x + moveX);
+    let newY = Math.round(y + moveY);
     
     // Apply bounds checking
     newX = Math.max(0, Math.min(screenWidth - winWidth, newX));
     newY = Math.max(0, Math.min(screenHeight - winHeight, newY));
     
-    mainWindow.setPosition(newX, newY);
+    // Set the position with the animate option set to false for smoother movement
+    mainWindow.setPosition(newX, newY, false);
   }
 });
 

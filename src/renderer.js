@@ -82,12 +82,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  // ===== CLEAN DRAG FUNCTIONALITY =====
+  // ===== IMPROVED DRAG FUNCTIONALITY =====
   
   // Variables to track drag state
   let isDragging = false;
   let lastMouseX = 0;
   let lastMouseY = 0;
+  let initialMouseX = 0;
+  let initialMouseY = 0;
+  
+  // Variables for throttling drag updates
+  let lastUpdateTime = 0;
+  let pendingUpdate = false;
+  const THROTTLE_MS = 8; // 8ms throttle (approximately 120fps)
   
   // Track the drag distance to differentiate between clicks and drags
   let dragDistance = 0;
@@ -103,32 +110,53 @@ document.addEventListener('DOMContentLoaded', () => {
     bubble.classList.add('dragging');
     
     // Store the initial mouse position
-    lastMouseX = e.clientX;
-    lastMouseY = e.clientY;
+    initialMouseX = lastMouseX = e.screenX; // Use screenX/Y instead of clientX/Y
+    initialMouseY = lastMouseY = e.screenY;
     
     // Prevent default behavior and text selection
     e.preventDefault();
   });
   
+  // Function to send move updates to main process (throttled)
+  function updateWindowPosition(currentX, currentY) {
+    if (pendingUpdate) return;
+    
+    const now = Date.now();
+    if (now - lastUpdateTime < THROTTLE_MS) {
+      // Throttle updates
+      pendingUpdate = true;
+      setTimeout(() => {
+        pendingUpdate = false;
+        // Use the most recent mouse position when the timeout fires
+        updateWindowPosition(lastMouseX, lastMouseY);
+      }, THROTTLE_MS - (now - lastUpdateTime));
+      return;
+    }
+    
+    // Calculate movement deltas
+    const deltaX = currentX - lastMouseX;
+    const deltaY = currentY - lastMouseY;
+    
+    // Only update if there's meaningful movement
+    if (Math.abs(deltaX) > 0 || Math.abs(deltaY) > 0) {
+      window.api.moveWindow(deltaX, deltaY);
+      
+      // Update last position and time
+      lastMouseX = currentX;
+      lastMouseY = currentY;
+      lastUpdateTime = now;
+    }
+  }
+  
   // Mouse move - handle dragging
   document.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
     
-    // Calculate movement
-    const deltaX = e.clientX - lastMouseX;
-    const deltaY = e.clientY - lastMouseY;
+    // Update drag distance for click detection
+    dragDistance += Math.abs(e.screenX - lastMouseX) + Math.abs(e.screenY - lastMouseY);
     
-    // Update drag distance
-    dragDistance += Math.abs(deltaX) + Math.abs(deltaY);
-    
-    // Move the window if we have actual movement
-    if (Math.abs(deltaX) > 0 || Math.abs(deltaY) > 0) {
-      window.api.moveWindow(deltaX, deltaY);
-      
-      // Update the reference position
-      lastMouseX = e.clientX;
-      lastMouseY = e.clientY;
-    }
+    // Send position update (this function handles throttling)
+    updateWindowPosition(e.screenX, e.screenY);
   });
   
   // Mouse up - end dragging or trigger click
