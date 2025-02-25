@@ -15,9 +15,13 @@ contextBridge.exposeInMainWorld(
     getWindowPosition: () => ipcRenderer.invoke('get-window-position'),
     closeApp: () => ipcRenderer.send('close-app'),
     
-    // Audio recording and transcription functions
+    // Audio recording and transcription functions - WebRTC version
     startRecording: () => ipcRenderer.invoke('start-recording'),
     stopRecordingAndTranscribe: () => ipcRenderer.invoke('stop-recording-and-transcribe'),
+    
+    // New WebRTC audio functions
+    sendAudioChunk: (chunk) => ipcRenderer.invoke('send-audio-chunk', chunk),
+    finalizeAudioRecording: () => ipcRenderer.invoke('finalize-audio-recording'),
     
     // Keyboard simulation
     typeText: (text) => ipcRenderer.invoke('type-text', text),

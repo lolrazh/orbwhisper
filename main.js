@@ -1,9 +1,14 @@
-const { app, BrowserWindow, globalShortcut, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, screen, clipboard } = require('electron');
 const path = require('path');
+// Load environment variables from .env file
+require('dotenv').config();
 
 // Import our modules
 const whisperApi = require('./src/whisper-api');
 const keyboardSim = require('./src/keyboard-sim');
+
+// Make clipboard available to keyboard-sim module
+keyboardSim.setClipboard(clipboard);
 
 // Keep a global reference of the window object to prevent garbage collection
 let mainWindow;
@@ -36,7 +41,8 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'src', 'preload.js')
+      preload: path.join(__dirname, 'src', 'preload.js'),
+      webSecurity: false // Allow loading local resources like adapter.js
     }
   });
 
@@ -70,10 +76,8 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow();
 
-  // Initialize Whisper API with placeholder key for now
-  // In a real app, we would load this from an environment variable
-  // or prompt the user to enter their API key
-  whisperApi.initOpenAI('dummy-api-key');
+  // Initialize Whisper API with API key from environment variable
+  whisperApi.initOpenAI(process.env.OPENAI_API_KEY);
 
   // Register a global shortcut for Win+H (or another combination)
   globalShortcut.register('CommandOrControl+Shift+H', () => {
@@ -168,6 +172,26 @@ ipcMain.handle('start-recording', async () => {
     return await whisperApi.startRecording();
   } catch (err) {
     console.error('Error starting recording:', err);
+    return false;
+  }
+});
+
+// Handle WebRTC audio chunks from renderer
+ipcMain.handle('send-audio-chunk', async (event, chunk) => {
+  try {
+    return await whisperApi.addAudioChunk(chunk);
+  } catch (err) {
+    console.error('Error processing audio chunk:', err);
+    return false;
+  }
+});
+
+// Handle finalizing WebRTC audio recording
+ipcMain.handle('finalize-audio-recording', async () => {
+  try {
+    return await whisperApi.finalizeRecording();
+  } catch (err) {
+    console.error('Error finalizing recording:', err);
     return false;
   }
 });

@@ -1,0 +1,7 @@
+// This is a placeholder for the real .ico file
+// Please replace this with a real icon file before building the app
+// You can create .ico files using online converters or tools like Photoshop
+// Icon size recommendations:
+// - Windows: 256x256 or higher
+// - macOS: 1024x1024 for best results
+// - Linux: 512x512 for AppImage 

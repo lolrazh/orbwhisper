@@ -20,8 +20,98 @@ document.addEventListener('DOMContentLoaded', () => {
   // Track dictation state
   let isDictating = false;
   
+  // WebRTC Audio Recording variables
+  let mediaRecorder = null;
+  let mediaStream = null;
+  
+  // Function to setup WebRTC audio recording
+  async function setupAudioRecording() {
+    try {
+      // Request microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      });
+      
+      // Store the stream for later use
+      mediaStream = stream;
+      
+      // Create recorder with WebM format
+      const options = { mimeType: 'audio/webm' };
+      mediaRecorder = new MediaRecorder(stream, options);
+      
+      // Event handler for data available event
+      mediaRecorder.addEventListener('dataavailable', async (event) => {
+        if (event.data.size > 0) {
+          // Convert blob to array buffer for sending to main process
+          const arrayBuffer = await event.data.arrayBuffer();
+          
+          // Send the audio chunk to the main process
+          try {
+            await window.api.sendAudioChunk(arrayBuffer);
+          } catch (error) {
+            console.error('Error sending audio chunk:', error);
+          }
+        }
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      statusText.textContent = 'Microphone access denied';
+      return false;
+    }
+  }
+  
+  // Function to start WebRTC recording
+  function startWebRTCRecording() {
+    if (!mediaRecorder || mediaRecorder.state === 'recording') {
+      return false;
+    }
+    
+    try {
+      // Start recording with 1-second chunks
+      mediaRecorder.start(1000);
+      return true;
+    } catch (error) {
+      console.error('Error starting WebRTC recording:', error);
+      return false;
+    }
+  }
+  
+  // Function to stop WebRTC recording
+  async function stopWebRTCRecording() {
+    if (!mediaRecorder || mediaRecorder.state !== 'recording') {
+      return false;
+    }
+    
+    return new Promise((resolve) => {
+      mediaRecorder.addEventListener('stop', async () => {
+        // Finalize the recording in the main process
+        try {
+          await window.api.finalizeAudioRecording();
+          resolve(true);
+        } catch (error) {
+          console.error('Error finalizing recording:', error);
+          resolve(false);
+        }
+      }, { once: true });
+      
+      // Stop the recording
+      mediaRecorder.stop();
+    });
+  }
+  
+  // Initialize WebRTC recording on startup
+  setupAudioRecording().catch(error => {
+    console.error('Error setting up audio recording:', error);
+  });
+  
   // Function to toggle dictation mode
-  function toggleDictation() {
+  async function toggleDictation() {
     isDictating = !isDictating;
     
     if (isDictating) {
@@ -30,24 +120,31 @@ document.addEventListener('DOMContentLoaded', () => {
       bubble.classList.add('active');
       statusText.textContent = 'Listening...';
       
-      // Start recording audio
-      window.api.startRecording()
-        .then(success => {
-          if (!success) {
-            statusText.textContent = 'Failed to start recording';
-            toggleDictation(); // Toggle back to inactive state
-          }
-        })
-        .catch(err => {
-          console.error('Recording error:', err);
-          statusText.textContent = 'Microphone error';
-          toggleDictation(); // Toggle back to inactive state
-        });
+      // Start recording - first in main process to set up state
+      const mainProcessStarted = await window.api.startRecording();
+      
+      // Then start WebRTC recording in renderer
+      if (mainProcessStarted) {
+        const webrtcStarted = startWebRTCRecording();
+        
+        if (!webrtcStarted) {
+          statusText.textContent = 'Failed to start recording';
+          isDictating = false;
+          bubble.classList.remove('active');
+        }
+      } else {
+        statusText.textContent = 'Failed to start recording';
+        isDictating = false;
+        bubble.classList.remove('active');
+      }
     } else {
-      // Stop recording and get transcription
+      // Stop WebRTC recording first
+      await stopWebRTCRecording();
+      
+      // Then get transcription via main process
       window.api.stopRecordingAndTranscribe()
         .then(result => {
-          if (result.text) {
+          if (result && result.text) {
             // Show the transcribed text briefly
             statusText.textContent = `Typing: "${result.text.substring(0, 20)}${result.text.length > 20 ? '...' : ''}"`;
             
@@ -58,7 +155,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Simulate typing the text
-            window.api.typeText(result.text);
+            window.api.typeText(result.text)
+              .then(typeResult => {
+                if (typeResult.error) {
+                  statusText.textContent = `Error: ${typeResult.error}`;
+                }
+              })
+              .catch(err => {
+                console.error('Typing error:', err);
+                statusText.textContent = 'Typing failed';
+              });
             
             // Reset status after a short delay
             setTimeout(() => {
@@ -68,11 +174,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 3000);
           } else if (result.error) {
             statusText.textContent = `Error: ${result.error}`;
+            setTimeout(() => {
+              if (!isDictating) {
+                statusText.textContent = 'Ready to dictate';
+              }
+            }, 3000);
           }
         })
         .catch(err => {
           console.error('Transcription error:', err);
           statusText.textContent = 'Transcription failed';
+          setTimeout(() => {
+            if (!isDictating) {
+              statusText.textContent = 'Ready to dictate';
+            }
+          }, 3000);
         });
       
       // Collapse the UI
@@ -96,6 +212,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Close button handler
   closeButton.addEventListener('click', (e) => {
     e.stopPropagation();
+    
+    // Stop any ongoing recording
+    if (isDictating) {
+      stopWebRTCRecording().catch(console.error);
+    }
+    
+    // Stop and release media stream if it exists
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+    }
+    
     window.api.closeApp();
   });
   

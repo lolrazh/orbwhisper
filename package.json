@@ -7,6 +7,9 @@
     "start": "electron .",
     "dev": "electron . --dev",
     "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -22,8 +25,43 @@
     "electron-builder": "^24.9.1"
   },
   "dependencies": {
+    "adapter": "^1.0.0-beta.10",
     "axios": "^1.7.9",
-    "microphone-stream": "^6.0.1",
+    "dotenv": "^16.3.1",
     "openai": "^4.85.4"
+  },
+  "build": {
+    "appId": "com.sandywhisper.app",
+    "productName": "SandyWhisper",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "package.json",
+      "src/**/*",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": ".env",
+        "to": ".env.example",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "src/assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "src/assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "src/assets/icon.png"
+    }
   }
 }
