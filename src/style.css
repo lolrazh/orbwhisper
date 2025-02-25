@@ -1,0 +1,122 @@
+/* Global styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  overflow: hidden;
+  background: transparent;
+  -webkit-app-region: drag; /* Make the window draggable */
+  user-select: none;
+}
+
+/* Main bubble */
+#bubble {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(20, 20, 20, 0.7);
+  cursor: pointer;
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  -webkit-app-region: no-drag; /* Allow clicking */
+}
+
+#bubble:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+#bubble-inner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5e72eb, #ff9190);
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+}
+
+#bubble.active #bubble-inner {
+  opacity: 1;
+  animation: pulse 1.5s infinite;
+}
+
+/* Expanded panel */
+#expanded-panel {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 250px;
+  height: 50px;
+  background: rgba(20, 20, 20, 0.8);
+  border-radius: 25px;
+  display: flex;
+  align-items: center;
+  padding: 0 15px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+#expanded-panel.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Status text */
+#status-text {
+  color: white;
+  font-size: 14px;
+  margin-left: 15px;
+  white-space: nowrap;
+}
+
+/* Frequency animation bars */
+#frequency-animation {
+  display: flex;
+  align-items: center;
+  height: 30px;
+}
+
+.bar {
+  width: 3px;
+  height: 12px;
+  background: linear-gradient(to top, #5e72eb, #ff9190);
+  margin: 0 2px;
+  border-radius: 1px;
+  transform-origin: bottom;
+}
+
+/* Animation for bars */
+@keyframes equalize {
+  0% { height: 5px; }
+  50% { height: 20px; }
+  100% { height: 5px; }
+}
+
+/* Animation for the pulse effect */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* Make bars animate at different speeds */
+.bar:nth-child(1) { animation: equalize 0.9s infinite; }
+.bar:nth-child(2) { animation: equalize 1.1s infinite; animation-delay: 0.1s; }
+.bar:nth-child(3) { animation: equalize 0.7s infinite; animation-delay: 0.2s; }
+.bar:nth-child(4) { animation: equalize 1.3s infinite; animation-delay: 0.3s; }
+.bar:nth-child(5) { animation: equalize 0.8s infinite; animation-delay: 0.4s; }
+.bar:nth-child(6) { animation: equalize 1.0s infinite; animation-delay: 0.5s; }
+.bar:nth-child(7) { animation: equalize 1.2s infinite; animation-delay: 0.6s; }
+.bar:nth-child(8) { animation: equalize 0.9s infinite; animation-delay: 0.7s; } 

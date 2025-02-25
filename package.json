@@ -1,0 +1,19 @@
+{
+  "name": "sandy-whisper",
+  "version": "1.0.0",
+  "description": "A lightweight desktop dictation tool with a floating bubble UI",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["dictation", "speech-to-text", "whisper", "productivity"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1"
+  }
+}
