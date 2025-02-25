@@ -1,44 +1,47 @@
 // whisper-api.js
 // Handles audio recording and OpenAI Whisper API integration
-// WebRTC version - no FFmpeg dependency
+// WebRTC-based implementation
 
 const { OpenAI } = require('openai');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-// Initialize OpenAI with API key
+// Initialize variables
 let openai;
 let isRecording = false;
 let audioFilePath = '';
 let recordingTimeout = null;
-let audioChunks = []; // For storing WebRTC audio chunks
-let audioContext = null;
+let audioChunks = []; 
 let maxRecordingLength = 30000; // Maximum recording length in ms (30 seconds)
 let useFallbackMode = false; // Flag for fallback mode
 
-// Function to initialize the OpenAI client
+// Initialize the OpenAI client with API key
 function initOpenAI(apiKey) {
   if (!apiKey || apiKey === 'your_openai_api_key_here') {
     console.error('Invalid OpenAI API key. Please set your API key in the .env file.');
+    useFallbackMode = true;
     return false;
   }
   
-  openai = new OpenAI({
-    apiKey: apiKey
-  });
-  
-  console.log('OpenAI client initialized successfully');
-  return openai !== undefined;
+  try {
+    openai = new OpenAI({ apiKey });
+    console.log('OpenAI client initialized successfully');
+    return true;
+  } catch (err) {
+    console.error('Error initializing OpenAI client:', err);
+    useFallbackMode = true;
+    return false;
+  }
 }
 
-// Function to start recording - just initialize state, actual recording happens in renderer
+// Function to start recording - initializes state
 function startRecording() {
   if (isRecording) return Promise.resolve(false);
   
   return new Promise((resolve) => {
     try {
-      console.log('Starting audio recording with WebRTC');
+      console.log('Starting WebRTC audio recording');
       
       // Reset audio chunks array
       audioChunks = [];
@@ -47,7 +50,7 @@ function startRecording() {
       const tmpDir = os.tmpdir();
       audioFilePath = path.join(tmpDir, `whisper_recording_${Date.now()}.webm`);
       
-      // Set a timeout to stop recording after the maximum duration
+      // Set timeout to automatically stop if recording goes too long
       recordingTimeout = setTimeout(() => {
         if (isRecording) {
           console.log('Auto-stopping recording after timeout');
@@ -67,7 +70,7 @@ function startRecording() {
   });
 }
 
-// Add audio chunk from WebRTC recording
+// Add audio chunk from WebRTC
 async function addAudioChunk(chunk) {
   if (!isRecording) return false;
   
@@ -81,7 +84,7 @@ async function addAudioChunk(chunk) {
   }
 }
 
-// Finalize recording by concatenating chunks to a file
+// Finalize recording by saving audio data to file
 async function finalizeRecording() {
   if (!isRecording || audioChunks.length === 0) return false;
   
@@ -100,7 +103,7 @@ async function finalizeRecording() {
   }
 }
 
-// Function to stop recording
+// Stop recording
 function stopRecording() {
   if (!isRecording) return false;
   
@@ -115,7 +118,7 @@ function stopRecording() {
   return true;
 }
 
-// Function to transcribe audio using OpenAI Whisper API
+// Transcribe audio using OpenAI Whisper API
 async function transcribeAudio() {
   // If in fallback mode, return dummy transcription
   if (useFallbackMode) {
@@ -158,20 +161,18 @@ async function transcribeAudio() {
   }
 }
 
-// Fallback transcription function that returns dummy text
+// Fallback transcription function (for demo/testing)
 async function transcribeFallbackAudio() {
   return new Promise((resolve) => {
-    console.log('Generating simulated transcription (fallback mode)');
+    console.log('Using fallback transcription mode');
     
     // List of possible phrases for testing
     const dummyPhrases = [
       "This is a test of the dictation system in fallback mode.",
       "Hello world, I'm using SandyWhisper for dictation.",
       "The quick brown fox jumps over the lazy dog.",
-      "In WebRTC mode, we capture audio directly from the browser.",
       "Voice dictation can help increase productivity substantially.",
-      "This is a placeholder response while in fallback mode.",
-      "OpenAI's Whisper model provides accurate transcription in many languages."
+      "This is a placeholder response while in fallback mode."
     ];
     
     // Simulate a processing delay
@@ -180,11 +181,11 @@ async function transcribeFallbackAudio() {
       resolve({
         text: dummyPhrases[randomIndex]
       });
-    }, 1500);
+    }, 1000);
   });
 }
 
-// Function that will be called from renderer to get transcription
+// Get dictation text - stops recording and transcribes
 async function getDictationText() {
   if (isRecording) {
     // Stop recording to process the audio
@@ -192,7 +193,7 @@ async function getDictationText() {
     
     // Wait a bit for any final chunks to be processed
     if (!useFallbackMode) {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 250));
     }
     
     // Transcribe the audio

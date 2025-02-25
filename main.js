@@ -42,7 +42,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'src', 'preload.js'),
-      webSecurity: false // Allow loading local resources like adapter.js
+      webSecurity: false // Allow loading adapter.js from CDN
     }
   });
 
@@ -51,7 +51,6 @@ function createWindow() {
 
   // Open DevTools in development mode
   if (process.argv.includes('--dev')) {
-    // Open in detached mode and position it away from our app
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
 
@@ -79,7 +78,7 @@ app.whenReady().then(() => {
   // Initialize Whisper API with API key from environment variable
   whisperApi.initOpenAI(process.env.OPENAI_API_KEY);
 
-  // Register a global shortcut for Win+H (or another combination)
+  // Register a global shortcut for dictation toggle
   globalShortcut.register('CommandOrControl+Shift+H', () => {
     if (mainWindow) {
       // Send toggle message to the renderer process
@@ -92,7 +91,7 @@ app.whenReady().then(() => {
     }
   });
   
-  // Add a second shortcut to close/hide the app
+  // Add a shortcut to close/hide the app
   globalShortcut.register('CommandOrControl+Shift+Escape', () => {
     if (mainWindow && mainWindow.isVisible()) {
       mainWindow.hide();
@@ -166,7 +165,11 @@ ipcMain.handle('get-window-position', () => {
   return [0, 0];
 });
 
-// Handle audio recording requests
+//=====================================================================
+// Audio Processing IPC Handlers
+//=====================================================================
+
+// Start recording
 ipcMain.handle('start-recording', async () => {
   try {
     return await whisperApi.startRecording();
@@ -199,7 +202,6 @@ ipcMain.handle('finalize-audio-recording', async () => {
 // Handle audio transcription requests
 ipcMain.handle('stop-recording-and-transcribe', async () => {
   try {
-    // Stop recording and get the transcription
     return await whisperApi.getDictationText();
   } catch (err) {
     console.error('Error transcribing audio:', err);
@@ -210,7 +212,6 @@ ipcMain.handle('stop-recording-and-transcribe', async () => {
 // Handle typing text
 ipcMain.handle('type-text', async (event, text) => {
   try {
-    // Simulate typing the text
     return await keyboardSim.typeText(text);
   } catch (err) {
     console.error('Error typing text:', err);
