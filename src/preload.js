@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld(
     // Window control functions
     toggleDictation: () => ipcRenderer.send('toggle-dictation'),
     moveWindow: (moveX, moveY) => ipcRenderer.send('move-window', { moveX, moveY }),
+    setWindowPosition: (x, y) => ipcRenderer.send('set-window-position', { x, y }),
+    getWindowPosition: () => ipcRenderer.invoke('get-window-position'),
     closeApp: () => ipcRenderer.send('close-app'),
     
     // Audio recording and transcription functions

@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Get DOM elements
   const appContainer = document.getElementById('app-container');
   const bubble = document.getElementById('bubble');
-  const dragHandle = document.getElementById('drag-handle');
   const expandedPanel = document.getElementById('expanded-panel');
   const statusText = document.getElementById('status-text');
   const closeButton = document.getElementById('close-button');
@@ -82,117 +81,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  // ===== IMPROVED DRAG FUNCTIONALITY =====
+  // Click events for UI elements
   
-  // Variables to track drag state
-  let isDragging = false;
-  let lastMouseX = 0;
-  let lastMouseY = 0;
-  let initialMouseX = 0;
-  let initialMouseY = 0;
-  
-  // Variables for throttling drag updates
-  let lastUpdateTime = 0;
-  let pendingUpdate = false;
-  const THROTTLE_MS = 8; // 8ms throttle (approximately 120fps)
-  
-  // Track the drag distance to differentiate between clicks and drags
-  let dragDistance = 0;
-  
-  // Mouse down on drag handle - start potential drag
-  dragHandle.addEventListener('mousedown', (e) => {
-    // Only handle left mouse button
-    if (e.button !== 0) return;
-    
-    isDragging = true;
-    dragDistance = 0;
-    dragHandle.classList.add('dragging');
-    bubble.classList.add('dragging');
-    
-    // Store the initial mouse position
-    initialMouseX = lastMouseX = e.screenX; // Use screenX/Y instead of clientX/Y
-    initialMouseY = lastMouseY = e.screenY;
-    
-    // Prevent default behavior and text selection
-    e.preventDefault();
-  });
-  
-  // Function to send move updates to main process (throttled)
-  function updateWindowPosition(currentX, currentY) {
-    if (pendingUpdate) return;
-    
-    const now = Date.now();
-    if (now - lastUpdateTime < THROTTLE_MS) {
-      // Throttle updates
-      pendingUpdate = true;
-      setTimeout(() => {
-        pendingUpdate = false;
-        // Use the most recent mouse position when the timeout fires
-        updateWindowPosition(lastMouseX, lastMouseY);
-      }, THROTTLE_MS - (now - lastUpdateTime));
-      return;
-    }
-    
-    // Calculate movement deltas
-    const deltaX = currentX - lastMouseX;
-    const deltaY = currentY - lastMouseY;
-    
-    // Only update if there's meaningful movement
-    if (Math.abs(deltaX) > 0 || Math.abs(deltaY) > 0) {
-      window.api.moveWindow(deltaX, deltaY);
-      
-      // Update last position and time
-      lastMouseX = currentX;
-      lastMouseY = currentY;
-      lastUpdateTime = now;
-    }
-  }
-  
-  // Mouse move - handle dragging
-  document.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    
-    // Update drag distance for click detection
-    dragDistance += Math.abs(e.screenX - lastMouseX) + Math.abs(e.screenY - lastMouseY);
-    
-    // Send position update (this function handles throttling)
-    updateWindowPosition(e.screenX, e.screenY);
-  });
-  
-  // Mouse up - end dragging or trigger click
-  document.addEventListener('mouseup', (e) => {
-    if (!isDragging) return;
-    
-    dragHandle.classList.remove('dragging');
-    bubble.classList.remove('dragging');
-    
-    // If minimal drag occurred, treat as a click
-    if (dragDistance < 5) {
-      toggleDictation();
-    }
-    
-    // Reset drag state
-    isDragging = false;
-  });
-  
-  // Mouse leave - end dragging if mouse leaves window
-  document.addEventListener('mouseleave', () => {
-    if (isDragging) {
-      dragHandle.classList.remove('dragging');
-      bubble.classList.remove('dragging');
-      isDragging = false;
-    }
-  });
-  
-  // Click events for specific UI elements
-  
-  // Handle bubble clicks (when not dragging)
-  bubble.addEventListener('click', (e) => {
-    // Only handle if we're not at the end of a drag operation
-    // The dragHandle will handle cases where the click follows a mousedown+mouseup without movement
-    if (e.target !== dragHandle && !isDragging) {
-      toggleDictation();
-    }
+  // Handle bubble clicks
+  bubble.addEventListener('click', () => {
+    toggleDictation();
   });
   
   // Handle clicking on expanded panel

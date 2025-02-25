@@ -13,12 +13,16 @@ function createWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
   
-  // Create the browser window with fixed size
+  // Fixed window dimensions
+  const winWidth = 270;
+  const winHeight = 70;
+  
+  // Create the browser window - centered horizontally
   mainWindow = new BrowserWindow({
-    width: 270,  // Fixed width to accommodate expansion
-    height: 70,
-    x: screenWidth - 280,  // Position in bottom right, accounting for window size
-    y: screenHeight - 80,
+    width: winWidth,
+    height: winHeight,
+    x: Math.floor((screenWidth - winWidth) / 2),  // Center horizontally
+    y: screenHeight - 80,  // Keep near bottom of screen
     frame: false, // Frameless window
     transparent: true, // Allow transparency
     alwaysOnTop: true, // Always on top of other windows
@@ -113,26 +117,49 @@ app.on('will-quit', () => {
   globalShortcut.unregisterAll();
 });
 
-// Handle window movement
+// Handle window movement (vertical only)
 ipcMain.on('move-window', (event, { moveX, moveY }) => {
   if (mainWindow) {
     const [x, y] = mainWindow.getPosition();
-    
-    // Ensure the window stays visible on screen
-    const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { height: screenHeight } = primaryDisplay.workAreaSize;
     const [winWidth, winHeight] = mainWindow.getSize();
     
-    // Calculate new position - round to nearest pixel to avoid sub-pixel rendering issues
-    let newX = Math.round(x + moveX);
+    // Only allow vertical movement, ignore horizontal
     let newY = Math.round(y + moveY);
     
-    // Apply bounds checking
-    newX = Math.max(0, Math.min(screenWidth - winWidth, newX));
+    // Apply bounds checking for vertical position
     newY = Math.max(0, Math.min(screenHeight - winHeight, newY));
     
-    // Set the position with the animate option set to false for smoother movement
-    mainWindow.setPosition(newX, newY, false);
+    // Keep x position the same (centered)
+    mainWindow.setPosition(x, newY, false);
   }
+});
+
+// Handle absolute window positioning (vertical only)
+ipcMain.on('set-window-position', (event, { x, y }) => {
+  if (mainWindow) {
+    // Get current position to maintain horizontal center
+    const [currentX, currentY] = mainWindow.getPosition();
+    
+    // Ensure the window stays visible on screen vertically
+    const { height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
+    const [winWidth, winHeight] = mainWindow.getSize();
+    
+    // Apply bounds checking for vertical only
+    const boundedY = Math.max(0, Math.min(screenHeight - winHeight, Math.round(y)));
+    
+    // Set the position - keep x the same, only change y
+    mainWindow.setPosition(currentX, boundedY, false);
+  }
+});
+
+// Get current window position
+ipcMain.handle('get-window-position', () => {
+  if (mainWindow) {
+    return mainWindow.getPosition();
+  }
+  return [0, 0];
 });
 
 // Handle audio recording requests

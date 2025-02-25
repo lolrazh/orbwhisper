@@ -52,13 +52,6 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-#bubble.dragging {
-  transform: scale(1.05);
-  cursor: grabbing;
-  opacity: 0.8;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-}
-
 #bubble-inner {
   width: 40px;
   height: 40px;
@@ -170,20 +163,6 @@ body {
 .bar:nth-child(6) { animation: equalize 1.0s infinite; animation-delay: 0.5s; }
 .bar:nth-child(7) { animation: equalize 1.2s infinite; animation-delay: 0.6s; }
 .bar:nth-child(8) { animation: equalize 0.9s infinite; animation-delay: 0.7s; }
-
-/* Drag handler - invisible area on the bubble to handle dragging */
-#drag-handle {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  cursor: grab;
-  z-index: 20;
-}
-
-#drag-handle.dragging {
-  cursor: grabbing;
-}
 
 /* Debug panel - visible only in development mode */
 #debug-panel {
