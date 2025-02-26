@@ -20,7 +20,7 @@ function createWindow() {
   
   // Updated window dimensions to match CSS changes
   const winWidth = 200; // Reduced from 270px to 200px
-  const winHeight = 180; // Increased to 180px to accommodate context menu
+  const winHeight = 200; // Increased to 200px to ensure context menu fits
   
   // Create the browser window - centered horizontally
   mainWindow = new BrowserWindow({

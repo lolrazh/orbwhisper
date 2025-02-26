@@ -14,13 +14,13 @@ body {
   user-select: none;
   position: relative;
   width: 200px; /* Reduced width from 270px */
-  height: 180px; /* Increased height to accommodate both panels above the orb */
+  height: 200px; /* Increased height to ensure context menu fits */
 }
 
 /* App container - holds both bubble and panel */
 #app-container {
   position: absolute;
-  bottom: 10px;
+  bottom: 5px; /* Moved lower - was 10px */
   left: 50%; /* Center horizontally */
   transform: translateX(-50%); /* Center horizontally */
   width: 200px; /* Same as body width */
@@ -42,7 +42,7 @@ body {
   align-items: center;
   justify-content: center;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: 0 0 6px rgba(255, 145, 144, 0.15); /* Subtle glow matching frequency bars */
+  box-shadow: 0 0 4px rgba(255, 145, 144, 0.1); /* Slight glow by default */
   z-index: 10;
   position: relative;
   flex-shrink: 0; /* Prevent bubble from shrinking */
@@ -50,12 +50,12 @@ body {
 
 #bubble:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 10px rgba(255, 145, 144, 0.25);
+  box-shadow: 0 0 8px rgba(255, 145, 144, 0.2); /* Increased glow on hover */
 }
 
 #bubble-inner {
-  width: 40px;
-  height: 40px;
+  width: 40px; /* Restored to original size */
+  height: 40px; /* Restored to original size */
   border-radius: 50%;
   background: linear-gradient(135deg, #5e72eb, #ff9190);
   opacity: 0.9;
@@ -65,6 +65,7 @@ body {
 /* Removing the animation from active state - will be used for pasting state */
 #bubble.active #bubble-inner {
   opacity: 1;
+  box-shadow: 0 0 10px rgba(255, 145, 144, 0.25); /* Apply glow directly to inner element */
 }
 
 /* New class for pasting animation - modified to pulse intensity rather than going to zero */
@@ -80,22 +81,22 @@ body {
 
 /* Expanded panel - now positioned closer to the bubble */
 #expanded-panel {
-  height: 40px; /* Reduced height */
-  width: 150px; /* Smaller width */
+  height: 36px; /* Reduced height further */
+  width: 120px; /* Smaller width */
   background: #1a1a1a; /* Solid dark gray background */
   border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 15px;
-  margin-bottom: 5px; /* Reduced space between panel and bubble (was 10px) */
+  padding: 0 10px;
+  margin-bottom: 0px; /* Closest to the orb - was 3px */
   transition: opacity 0.3s ease, transform 0.3s ease;
   box-shadow: 0 0 10px rgba(255, 145, 144, 0.15); /* Subtle matching glow */
   overflow: hidden; /* Hide content when collapsed */
   opacity: 1;
   backdrop-filter: blur(5px); /* Add blur effect */
   position: absolute;
-  bottom: 60px; /* Position above the orb */
+  bottom: 55px; /* Position closer to the orb - was 60px */
   transform: translateY(20px); /* Initial position for animation */
   pointer-events: none; /* Allow clicking through when not needed */
 }
@@ -124,16 +125,16 @@ body {
 #frequency-animation {
   display: flex;
   align-items: center;
-  justify-content: space-between; /* Spread bars across container */
+  justify-content: center; /* Center bars */
   height: 30px;
-  width: 120px; /* Wider to fill more of the container */
+  width: 90px; /* Increased width for better spacing (was 80px) */
 }
 
 .bar {
-  width: 3px; /* Slightly thinner */
+  width: 3.5px; /* Increased width by ~10% (was 3px) */
   height: 12px;
   background: linear-gradient(to top, #5e72eb, #ff9190);
-  margin: 0 1px;
+  margin: 0 1.5px; /* Increased spacing by ~10% (was 1px) */
   border-radius: 2px;
   transform-origin: bottom;
   box-shadow: 0 0 3px rgba(255, 145, 144, 0.15); /* Reduced glow to 25% */
@@ -156,6 +157,10 @@ body {
 .bar:nth-child(6) { animation: equalize 1.1s ease-in-out infinite; animation-delay: 0.5s; }
 .bar:nth-child(7) { animation: equalize 1.3s ease-in-out infinite; animation-delay: 0.6s; }
 .bar:nth-child(8) { animation: equalize 1.6s ease-in-out infinite; animation-delay: 0.7s; }
+.bar:nth-child(9) { animation: equalize 1.2s ease-in-out infinite; animation-delay: 0.05s; }
+.bar:nth-child(10) { animation: equalize 1.8s ease-in-out infinite; animation-delay: 0.15s; }
+.bar:nth-child(11) { animation: equalize 1.4s ease-in-out infinite; animation-delay: 0.25s; }
+.bar:nth-child(12) { animation: equalize 1.0s ease-in-out infinite; animation-delay: 0.35s; }
 
 /* Animation for the subtle pulse effect that doesn't go to zero */
 @keyframes subtle-pulse {
@@ -172,7 +177,7 @@ body {
   transform: translateX(-50%);
   background: #1a1a1a; /* Matching the frequency panel */
   border-radius: 16px;
-  padding: 8px 0;
+  padding: 6px 0;
   min-width: 150px; /* Reduced from 180px */
   box-shadow: 0 0 10px rgba(255, 145, 144, 0.15); /* Matching glow */
   z-index: 1000;
@@ -181,14 +186,15 @@ body {
 }
 
 .context-menu-item {
-  padding: 8px 16px; /* Reduced padding */
+  padding: 6px 16px; /* Further reduced padding */
   color: white;
   font-size: 12px; /* Smaller font */
-  font-weight: 500; /* Medium weight for better readability */
+  font-weight: 400; /* Normal weight instead of bold */
   cursor: pointer;
   transition: all 0.2s ease;
   margin: 0 5px; /* Add margin for rounded rectangle effect */
   border-radius: 8px; /* Rounded corners for hover state */
+  line-height: 1.2; /* Tighter line height */
 }
 
 .context-menu-item:hover {
@@ -208,7 +214,7 @@ body {
 .context-menu-separator {
   height: 1px;
   background-color: rgba(255, 255, 255, 0.1);
-  margin: 5px 10px; /* Added horizontal margin */
+  margin: 3px 10px; /* Reduced vertical margin */
 }
 
 /* Debug panel - visible only in development mode */

@@ -24,16 +24,20 @@ document.addEventListener('DOMContentLoaded', () => {
   let mediaRecorder = null;
   let mediaStream = null;
   
-  // Create context menu
+  // Create context menu - completely new implementation
   function createContextMenu(x, y) {
-    // Remove any existing context menus
-    removeContextMenu();
+    // Remove any existing menu first
+    const existingMenu = document.querySelector('.context-menu');
+    if (existingMenu) {
+      existingMenu.remove();
+    }
     
-    // Create context menu element
-    const contextMenu = document.createElement('div');
-    contextMenu.className = 'context-menu';
+    // Create a new menu
+    const menu = document.createElement('div');
+    menu.className = 'context-menu';
+    document.body.appendChild(menu);
     
-    // Add menu items - updated per request
+    // Add menu items
     const menuItems = [
       { label: 'Hide App', action: dummyAction, isDummy: true },
       { label: 'Hotkey', action: dummyAction, isDummy: true },
@@ -41,49 +45,73 @@ document.addEventListener('DOMContentLoaded', () => {
       { label: 'Close App', action: closeApp }
     ];
     
+    // Add items to menu
     menuItems.forEach(item => {
       if (item.type === 'separator') {
         const separator = document.createElement('div');
         separator.className = 'context-menu-separator';
-        contextMenu.appendChild(separator);
+        menu.appendChild(separator);
       } else {
         const menuItem = document.createElement('div');
         menuItem.className = 'context-menu-item';
-        
-        // Add a class for dummy buttons
-        if (item.isDummy) {
-          menuItem.className += ' dummy-button';
-        }
-        
+        if (item.isDummy) menuItem.className += ' dummy-button';
         menuItem.textContent = item.label;
+        
+        // Add click handler
         menuItem.addEventListener('click', () => {
+          hideContextMenu();
           item.action();
-          removeContextMenu();
         });
-        contextMenu.appendChild(menuItem);
+        
+        menu.appendChild(menuItem);
       }
     });
     
-    // Add to body
-    document.body.appendChild(contextMenu);
-    
-    // No position calculations needed - CSS handles positioning centered above orb
-    
-    // Handle clicking outside the menu to close it
-    document.addEventListener('click', removeContextMenu, { once: true });
-  }
-  
-  // Remove context menu
-  function removeContextMenu() {
-    const existingMenu = document.querySelector('.context-menu');
-    if (existingMenu) {
-      existingMenu.remove();
+    // Function to hide context menu
+    function hideContextMenu() {
+      if (menu && document.body.contains(menu)) {
+        document.body.removeChild(menu);
+        window.removeEventListener('blur', hideContextMenu);
+        document.removeEventListener('click', handleOutsideClick);
+        document.removeEventListener('keydown', handleEscapeKey);
+      }
     }
+    
+    // Handle clicks outside the menu
+    function handleOutsideClick(event) {
+      // Check if the click was outside the menu
+      if (menu && !menu.contains(event.target)) {
+        hideContextMenu();
+      }
+    }
+    
+    // Handle escape key press
+    function handleEscapeKey(event) {
+      if (event.key === 'Escape') {
+        hideContextMenu();
+      }
+    }
+    
+    // Close menu when window loses focus
+    window.addEventListener('blur', hideContextMenu);
+    
+    // Use a short timeout to avoid the same click that opened the menu
+    setTimeout(() => {
+      document.addEventListener('click', handleOutsideClick);
+      document.addEventListener('keydown', handleEscapeKey);
+    }, 100);
+    
+    // Clean up if app recording starts
+    bubble.addEventListener('click', hideContextMenu, { once: true });
+    
+    // Also make sure menu is removed when hotkey is pressed
+    window.api.onToggleDictation(() => {
+      hideContextMenu();
+    });
   }
   
   // Dummy action for non-functional buttons
   function dummyAction() {
-    // Do nothing - this is a placeholder for future functionality
     console.log('This button is not yet implemented');
   }
   
@@ -248,7 +276,8 @@ document.addEventListener('DOMContentLoaded', () => {
       bubble.classList.remove('active');
       bubble.classList.add('pasting');
       appContainer.classList.remove('recording');
-      statusText.textContent = 'Processing...';
+      
+      // Don't show "Processing..." text - removed
       
       // Stop WebRTC recording first
       await stopWebRTCRecording();
