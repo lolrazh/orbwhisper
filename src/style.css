@@ -41,16 +41,15 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: 0 0 4px rgba(255, 145, 144, 0.1); /* Slight glow by default */
+  transition: transform 0.3s ease;
   z-index: 10;
   position: relative;
   flex-shrink: 0; /* Prevent bubble from shrinking */
+  background: transparent; /* Ensure outer bubble has no background */
 }
 
 #bubble:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 8px rgba(255, 145, 144, 0.2); /* Increased glow on hover */
 }
 
 #bubble-inner {
@@ -60,12 +59,13 @@ body {
   background: linear-gradient(135deg, #5e72eb, #ff9190);
   opacity: 0.9;
   transition: opacity 0.2s ease, transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 0 8px rgba(255, 145, 144, 0.2), 0 2px 4px rgba(0, 0, 0, 0.2); /* Combined glow and subtle drop shadow */
 }
 
 /* Removing the animation from active state - will be used for pasting state */
 #bubble.active #bubble-inner {
   opacity: 1;
-  box-shadow: 0 0 10px rgba(255, 145, 144, 0.25); /* Apply glow directly to inner element */
+  box-shadow: 0 0 10px rgba(255, 145, 144, 0.25), 0 3px 5px rgba(0, 0, 0, 0.25); /* Enhanced glow with subtle drop shadow */
 }
 
 /* New class for pasting animation - modified to pulse intensity rather than going to zero */
@@ -91,7 +91,7 @@ body {
   padding: 0 10px;
   margin-bottom: 0px; /* Closest to the orb - was 3px */
   transition: opacity 0.3s ease, transform 0.3s ease;
-  box-shadow: 0 0 10px rgba(255, 145, 144, 0.15); /* Subtle matching glow */
+  box-shadow: 0 0 10px rgba(255, 145, 144, 0.15), 0 3px 5px rgba(0, 0, 0, 0.2); /* Added subtle drop shadow */
   overflow: hidden; /* Hide content when collapsed */
   opacity: 1;
   backdrop-filter: blur(5px); /* Add blur effect */
@@ -164,9 +164,9 @@ body {
 
 /* Animation for the subtle pulse effect that doesn't go to zero */
 @keyframes subtle-pulse {
-  0% { transform: scale(1); box-shadow: 0 0 8px rgba(255, 145, 144, 0.3); }
-  50% { transform: scale(1.1); box-shadow: 0 0 15px rgba(255, 145, 144, 0.5); }
-  100% { transform: scale(1); box-shadow: 0 0 8px rgba(255, 145, 144, 0.3); }
+  0% { transform: scale(1); box-shadow: 0 0 8px rgba(255, 145, 144, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2); }
+  50% { transform: scale(1.1); box-shadow: 0 0 15px rgba(255, 145, 144, 0.5), 0 3px 6px rgba(0, 0, 0, 0.3); }
+  100% { transform: scale(1); box-shadow: 0 0 8px rgba(255, 145, 144, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2); }
 }
 
 /* Context menu styling - positioned centered above the orb */
@@ -179,7 +179,7 @@ body {
   border-radius: 16px;
   padding: 6px 0;
   min-width: 150px; /* Reduced from 180px */
-  box-shadow: 0 0 10px rgba(255, 145, 144, 0.15); /* Matching glow */
+  box-shadow: 0 0 10px rgba(255, 145, 144, 0.15), 0 3px 5px rgba(0, 0, 0, 0.2); /* Added subtle drop shadow */
   z-index: 1000;
   backdrop-filter: blur(5px); /* Add blur effect */
   overflow: hidden; /* Hide scrollbars */
@@ -231,7 +231,7 @@ body {
   color: white;
   font-size: 12px;
   transition: opacity 0.3s ease;
-  box-shadow: 0 0 10px rgba(255, 145, 144, 0.15); /* Matching glow */
+  box-shadow: 0 0 10px rgba(255, 145, 144, 0.15), 0 3px 5px rgba(0, 0, 0, 0.2); /* Added subtle drop shadow */
   backdrop-filter: blur(5px);
 }
 
