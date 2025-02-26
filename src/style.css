@@ -13,20 +13,22 @@ body {
   background: transparent;
   user-select: none;
   position: relative;
-  width: 270px; /* Fixed width to accommodate expanded state */
-  height: 70px;
+  width: 200px; /* Reduced width from 270px */
+  height: 180px; /* Increased height to accommodate both panels above the orb */
 }
 
 /* App container - holds both bubble and panel */
 #app-container {
   position: absolute;
   bottom: 10px;
-  right: 10px;
-  width: 270px; /* Same as body width */
+  left: 50%; /* Center horizontally */
+  transform: translateX(-50%); /* Center horizontally */
+  width: 200px; /* Same as body width */
   height: 50px;
   display: flex;
-  justify-content: flex-end; /* Align content to the right */
-  align-items: center;
+  flex-direction: column; /* Stack elements vertically */
+  align-items: center; /* Center align horizontally */
+  justify-content: flex-end; /* Align to bottom */
   transition: width 0.3s ease-out;
 }
 
@@ -35,22 +37,20 @@ body {
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 1); /* Fully opaque black */
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 6px rgba(255, 145, 144, 0.15); /* Subtle glow matching frequency bars */
   z-index: 10;
-  position: relative; /* Keep bubble positioned on the right */
+  position: relative;
   flex-shrink: 0; /* Prevent bubble from shrinking */
-  backdrop-filter: blur(2px); /* Add blur effect */
 }
 
 #bubble:hover {
   transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 10px rgba(255, 145, 144, 0.25);
 }
 
 #bubble-inner {
@@ -67,10 +67,10 @@ body {
   opacity: 1;
 }
 
-/* New class for pasting animation */
+/* New class for pasting animation - modified to pulse intensity rather than going to zero */
 #bubble.pasting #bubble-inner {
   opacity: 1;
-  animation: pulse 1.5s ease-in-out infinite;
+  animation: subtle-pulse 1.5s ease-in-out infinite;
 }
 
 /* Hide status text when recording */
@@ -78,80 +78,65 @@ body {
   display: none;
 }
 
-/* Close button - will be removed in HTML */
-#close-button {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: rgba(255, 75, 75, 0.8);
-  color: white;
+/* Expanded panel - now positioned closer to the bubble */
+#expanded-panel {
+  height: 40px; /* Reduced height */
+  width: 150px; /* Smaller width */
+  background: #1a1a1a; /* Solid dark gray background */
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.2s ease;
-  z-index: 100;
-}
-
-#close-button:hover {
-  background: rgba(255, 55, 55, 1);
-  transform: scale(1.1);
-}
-
-/* Expanded panel */
-#expanded-panel {
-  flex-grow: 1; /* Take up available space */
-  height: 50px;
-  background: rgba(20, 20, 20, 0.8);
-  border-radius: 25px;
-  display: flex;
-  align-items: center;
   padding: 0 15px;
-  margin-right: 10px; /* Space between panel and bubble */
-  transition: opacity 0.3s ease, width 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  margin-bottom: 5px; /* Reduced space between panel and bubble (was 10px) */
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 0 10px rgba(255, 145, 144, 0.15); /* Subtle matching glow */
   overflow: hidden; /* Hide content when collapsed */
-  width: 200px; /* Fixed width to show when expanded */
   opacity: 1;
   backdrop-filter: blur(5px); /* Add blur effect */
+  position: absolute;
+  bottom: 60px; /* Position above the orb */
+  transform: translateY(20px); /* Initial position for animation */
+  pointer-events: none; /* Allow clicking through when not needed */
 }
 
 #app-container.collapsed #expanded-panel {
-  width: 0;
-  padding: 0;
-  margin-right: 0;
+  transform: translateY(20px);
   opacity: 0;
+}
+
+#app-container.recording #expanded-panel {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* Status text */
 #status-text {
   color: white;
   font-size: 14px;
-  margin-left: 15px;
+  font-weight: 500; /* Medium weight for better readability */
   white-space: nowrap;
+  text-align: center;
 }
 
 /* Frequency animation bars - enhanced version */
 #frequency-animation {
   display: flex;
   align-items: center;
+  justify-content: space-between; /* Spread bars across container */
   height: 30px;
-  min-width: 80px;
+  width: 120px; /* Wider to fill more of the container */
 }
 
 .bar {
-  width: 4px;
+  width: 3px; /* Slightly thinner */
   height: 12px;
   background: linear-gradient(to top, #5e72eb, #ff9190);
-  margin: 0 2px;
+  margin: 0 1px;
   border-radius: 2px;
   transform-origin: bottom;
-  box-shadow: 0 0 3px rgba(255, 145, 144, 0.6);
+  box-shadow: 0 0 3px rgba(255, 145, 144, 0.15); /* Reduced glow to 25% */
   transition: height 0.1s ease;
 }
 
@@ -172,41 +157,58 @@ body {
 .bar:nth-child(7) { animation: equalize 1.3s ease-in-out infinite; animation-delay: 0.6s; }
 .bar:nth-child(8) { animation: equalize 1.6s ease-in-out infinite; animation-delay: 0.7s; }
 
-/* Animation for the pulse effect */
-@keyframes pulse {
-  0% { transform: scale(1); box-shadow: 0 0 5px rgba(255, 145, 144, 0.6); }
-  50% { transform: scale(1.1); box-shadow: 0 0 15px rgba(255, 145, 144, 0.8); }
-  100% { transform: scale(1); box-shadow: 0 0 5px rgba(255, 145, 144, 0.6); }
+/* Animation for the subtle pulse effect that doesn't go to zero */
+@keyframes subtle-pulse {
+  0% { transform: scale(1); box-shadow: 0 0 8px rgba(255, 145, 144, 0.3); }
+  50% { transform: scale(1.1); box-shadow: 0 0 15px rgba(255, 145, 144, 0.5); }
+  100% { transform: scale(1); box-shadow: 0 0 8px rgba(255, 145, 144, 0.3); }
 }
 
-/* Context menu styling */
+/* Context menu styling - positioned centered above the orb */
 .context-menu {
   position: absolute;
-  background: rgba(20, 20, 20, 0.9);
-  border-radius: 8px;
+  bottom: 70px; /* Position above the orb */
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a1a; /* Matching the frequency panel */
+  border-radius: 16px;
   padding: 8px 0;
-  min-width: 150px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  min-width: 150px; /* Reduced from 180px */
+  box-shadow: 0 0 10px rgba(255, 145, 144, 0.15); /* Matching glow */
   z-index: 1000;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(5px); /* Add blur effect */
+  overflow: hidden; /* Hide scrollbars */
 }
 
 .context-menu-item {
-  padding: 8px 16px;
+  padding: 8px 16px; /* Reduced padding */
   color: white;
-  font-size: 14px;
+  font-size: 12px; /* Smaller font */
+  font-weight: 500; /* Medium weight for better readability */
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
+  margin: 0 5px; /* Add margin for rounded rectangle effect */
+  border-radius: 8px; /* Rounded corners for hover state */
 }
 
 .context-menu-item:hover {
-  background-color: rgba(94, 114, 235, 0.2);
+  background-color: rgba(255, 145, 144, 0.2); /* Subtle pink highlight */
+}
+
+/* Style for dummy buttons */
+.context-menu-item.dummy-button {
+  opacity: 0.7; /* Slightly dimmed to indicate not fully functional */
+  cursor: default; /* Change cursor to indicate non-clickable */
+}
+
+.context-menu-item.dummy-button:hover {
+  background-color: rgba(255, 145, 144, 0.1); /* Less prominent hover effect */
 }
 
 .context-menu-separator {
   height: 1px;
   background-color: rgba(255, 255, 255, 0.1);
-  margin: 5px 0;
+  margin: 5px 10px; /* Added horizontal margin */
 }
 
 /* Debug panel - visible only in development mode */
@@ -217,13 +219,13 @@ body {
   width: 250px;
   max-height: 200px;
   overflow-y: auto;
-  background: rgba(20, 20, 20, 0.8);
-  border-radius: 8px;
+  background: #1a1a1a; /* Matching other UI elements */
+  border-radius: 16px;
   padding: 10px;
   color: white;
   font-size: 12px;
   transition: opacity 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 10px rgba(255, 145, 144, 0.15); /* Matching glow */
   backdrop-filter: blur(5px);
 }
 

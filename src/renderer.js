@@ -32,14 +32,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create context menu element
     const contextMenu = document.createElement('div');
     contextMenu.className = 'context-menu';
-    contextMenu.style.left = `${x}px`;
-    contextMenu.style.top = `${y}px`;
     
-    // Add menu items
+    // Add menu items - updated per request
     const menuItems = [
-      { label: 'About SandyWhisper', action: showAbout },
+      { label: 'Hide App', action: dummyAction, isDummy: true },
+      { label: 'Hotkey', action: dummyAction, isDummy: true },
       { type: 'separator' },
-      { label: 'Hide App', action: hideApp },
       { label: 'Close App', action: closeApp }
     ];
     
@@ -51,6 +49,12 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         const menuItem = document.createElement('div');
         menuItem.className = 'context-menu-item';
+        
+        // Add a class for dummy buttons
+        if (item.isDummy) {
+          menuItem.className += ' dummy-button';
+        }
+        
         menuItem.textContent = item.label;
         menuItem.addEventListener('click', () => {
           item.action();
@@ -63,6 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add to body
     document.body.appendChild(contextMenu);
     
+    // No position calculations needed - CSS handles positioning centered above orb
+    
     // Handle clicking outside the menu to close it
     document.addEventListener('click', removeContextMenu, { once: true });
   }
@@ -73,6 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (existingMenu) {
       existingMenu.remove();
     }
+  }
+  
+  // Dummy action for non-functional buttons
+  function dummyAction() {
+    // Do nothing - this is a placeholder for future functionality
+    console.log('This button is not yet implemented');
   }
   
   // Context menu actions

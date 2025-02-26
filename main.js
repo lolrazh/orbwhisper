@@ -18,16 +18,16 @@ function createWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
   
-  // Fixed window dimensions
-  const winWidth = 270;
-  const winHeight = 70;
+  // Updated window dimensions to match CSS changes
+  const winWidth = 200; // Reduced from 270px to 200px
+  const winHeight = 180; // Increased to 180px to accommodate context menu
   
   // Create the browser window - centered horizontally
   mainWindow = new BrowserWindow({
     width: winWidth,
     height: winHeight,
     x: Math.floor((screenWidth - winWidth) / 2),  // Center horizontally
-    y: screenHeight - 80,  // Keep near bottom of screen
+    y: screenHeight - winHeight - 10,  // Position at bottom with 10px margin
     frame: false, // Frameless window
     transparent: true, // Allow transparency
     alwaysOnTop: true, // Always on top of other windows
