@@ -9,12 +9,12 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
-  overflow: hidden;
+  overflow: visible; /* Changed from hidden to allow content to overflow */
   background: transparent;
   user-select: none;
   position: relative;
-  width: 200px; /* Reduced width from 270px */
-  height: 200px; /* Increased height to ensure context menu fits */
+  width: 200px;
+  height: 500px; /* Increased from 200px to allow for dropdown visibility */
   pointer-events: none; /* Make entire window click-through by default */
 }
 
@@ -226,9 +226,8 @@ body {
   border-radius: 8px;
   padding: 10px;
   min-width: 150px;
-  /* Enhanced black drop shadow under the glow */
   box-shadow: 
-    0 10px 20px rgba(0, 0, 0, 0.5),      /* Enhanced black drop shadow */
+    0 8px 16px rgba(0, 0, 0, 0.5),      /* Enhanced black drop shadow */
     0 0 12px rgba(255, 185, 144, 0.25);  /* Enhanced yellowish glow */
   z-index: 1000;
   font-family: 'Inter', sans-serif;
@@ -321,17 +320,16 @@ body {
   pointer-events: auto;
 }
 
-.hotkey-title {
+.hotkey-title, .position-title {
   font-size: 13px;
   font-weight: 500;
-  margin-bottom: 8px;
+  margin-bottom: 14px;
   color: #ccc;
 }
 
-.hotkey-instructions {
-  font-size: 12px;
-  margin-bottom: 10px;
-  color: #aaa;
+/* Remove the now unused instruction classes */
+.hotkey-instructions, .position-instructions {
+  display: none;
 }
 
 .hotkey-display {
@@ -341,12 +339,18 @@ body {
   margin-bottom: 14px;
   text-align: center;
   min-height: 20px;
-  font-family: monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
   transition: all 0.2s;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.hotkey-display:hover {
+  background: rgba(50, 50, 50, 0.8);
+  box-shadow: 0 0 5px rgba(255, 185, 144, 0.25);
 }
 
 .hotkey-display.key-pressed {
@@ -359,18 +363,13 @@ body {
   color: #ff9190;
 }
 
-.hotkey-display.success {
-  background: rgba(20, 80, 20, 0.8);
-  color: #90ff91;
-}
-
-.hotkey-buttons {
+.hotkey-buttons, .position-buttons {
   display: flex;
   justify-content: space-between;
   gap: 8px;
 }
 
-.hotkey-buttons button {
+.hotkey-buttons button, .position-buttons button {
   flex: 1;
   padding: 6px 0;
   border: none;
@@ -383,33 +382,33 @@ body {
   font-family: 'Inter', sans-serif;
 }
 
-.hotkey-buttons button:hover:not(:disabled) {
+.hotkey-buttons button:hover:not(:disabled), .position-buttons button:hover:not(:disabled) {
   background: rgba(255, 185, 144, 0.2);
   color: #ffb990;
   box-shadow: 0 0 5px rgba(255, 185, 144, 0.25);
 }
 
-.hotkey-buttons button:active:not(:disabled) {
+.hotkey-buttons button:active:not(:disabled), .position-buttons button:active:not(:disabled) {
   background: rgba(255, 185, 144, 0.3);
 }
 
-.hotkey-buttons button:disabled {
+.hotkey-buttons button:disabled, .position-buttons button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.hotkey-save {
+.hotkey-save, .position-save {
   color: #ffb990 !important;
 }
 
-.hotkey-save:hover:not(:disabled) {
+.hotkey-save:hover:not(:disabled), .position-save:hover:not(:disabled) {
   box-shadow: 0 0 5px rgba(255, 185, 144, 0.25);
 }
 
 /* Screen Position Selector */
 .position-config {
   position: absolute;
-  width: 200px; /* Match the width of hotkey config */
+  width: 200px;
   padding: 12px;
   background: rgba(20, 20, 20, 1);
   border-radius: 8px;
@@ -421,19 +420,6 @@ body {
   color: #fff;
   user-select: none;
   pointer-events: auto;
-}
-
-.position-title {
-  font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 8px;
-  color: #ccc;
-}
-
-.position-instructions {
-  font-size: 12px;
-  margin-bottom: 10px;
-  color: #aaa;
 }
 
 .position-dropdown {
@@ -469,44 +455,86 @@ body {
   padding: 8px;
 }
 
-.position-buttons {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
+/* Custom dropdown that looks like the context menu */
+.custom-dropdown-container {
+  position: relative;
+  width: 100%;
+  margin-bottom: 14px;
 }
 
-.position-buttons button {
-  flex: 1;
-  padding: 6px 0;
-  border: none;
-  border-radius: 4px;
+.selected-option {
   background: rgba(40, 40, 40, 0.8);
-  color: #ccc;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-  font-size: 12px;
+  border-radius: 4px;
+  padding: 8px 10px;
+  color: #fff;
   font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+  position: relative;
 }
 
-.position-buttons button:hover:not(:disabled) {
+.selected-option:hover {
+  background: rgba(50, 50, 50, 0.8);
+  box-shadow: 0 0 5px rgba(255, 185, 144, 0.25);
+}
+
+.selected-option:after {
+  content: '▼'; /* Back to down arrow */
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  color: #999;
+  transition: transform 0.2s;
+}
+
+/* Dropdown styling */
+.dropdown-options {
+  position: fixed;
+  background: rgba(20, 20, 20, 1);
+  border-radius: 8px;
+  padding: 6px;
+  overflow: visible;
+  z-index: 10000;
+  box-shadow: 
+    0 8px 16px rgba(0, 0, 0, 0.5),
+    0 0 12px rgba(255, 185, 144, 0.25);
+  max-height: none !important;
+  pointer-events: auto;
+}
+
+.dropdown-option {
+  padding: 6px 10px;
+  color: #ccc;
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  user-select: none;
+  border-radius: 4px;
+  margin: 2px;
+  display: block;
+  width: calc(100% - 4px);
+  line-height: 1.2;
+  pointer-events: auto;
+}
+
+.dropdown-option:hover {
   background: rgba(255, 185, 144, 0.2);
   color: #ffb990;
-  box-shadow: 0 0 5px rgba(255, 185, 144, 0.25);
+  box-shadow: none;
 }
 
-.position-buttons button:active:not(:disabled) {
-  background: rgba(255, 185, 144, 0.3);
+/* Disable hover effects on the position menu when dropdown is open */
+.dropdown-open .selected-option:hover {
+  background: rgba(40, 40, 40, 0.8);
+  box-shadow: none;
 }
 
-.position-buttons button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.position-save {
-  color: #ffb990 !important;
-}
-
-.position-save:hover:not(:disabled) {
-  box-shadow: 0 0 5px rgba(255, 185, 144, 0.25);
+/* Remove the old dropdown styles */
+.position-dropdown, .position-dropdown option {
+  display: none;
 } 

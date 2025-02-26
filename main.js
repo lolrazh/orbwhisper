@@ -28,7 +28,7 @@ function createWindow() {
   
   // Window dimensions
   const winWidth = 200;
-  const winHeight = 200;
+  const winHeight = 500;
   
   // Create the browser window - centered horizontally
   mainWindow = new BrowserWindow({
@@ -56,9 +56,6 @@ function createWindow() {
 
   // Load the index.html of the app
   mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
-
-  // Open DevTools for debugging
-  mainWindow.webContents.openDevTools({ mode: 'detach' });
 
   // Emitted when the window is closed
   mainWindow.on('closed', function () {

@@ -158,10 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
     title.className = 'hotkey-title';
     title.textContent = 'Configure Hotkey';
     
-    const instructions = document.createElement('div');
-    instructions.className = 'hotkey-instructions';
-    instructions.textContent = 'Press a key combination:';
-    
     const display = document.createElement('div');
     display.className = 'hotkey-display';
     
@@ -182,6 +178,14 @@ document.addEventListener('DOMContentLoaded', () => {
         currentKeyCombo = currentHotkey;
     });
     
+    // Add click handler to prompt user
+    display.addEventListener('click', () => {
+        if (!display.classList.contains('key-pressed')) {
+            display.textContent = 'Press a key...';
+            display.classList.add('key-pressed');
+        }
+    });
+    
     const buttonsContainer = document.createElement('div');
     buttonsContainer.className = 'hotkey-buttons';
     
@@ -198,23 +202,20 @@ document.addEventListener('DOMContentLoaded', () => {
     buttonsContainer.appendChild(cancelButton);
     
     hotkeyConfig.appendChild(title);
-    hotkeyConfig.appendChild(instructions);
     hotkeyConfig.appendChild(display);
     hotkeyConfig.appendChild(buttonsContainer);
     
     document.body.appendChild(hotkeyConfig);
     
-    // Position the panel - center it in the window for simplicity
-    const windowWidth = window.innerWidth;
+    // Position the panel - at same position as the context menu would appear
+    const bubbleRect = bubble.getBoundingClientRect();
     const windowHeight = window.innerHeight;
-    const panelWidth = 200; // Slightly wider than before
-    const panelHeight = 150;
     
-    const left = (windowWidth - panelWidth) / 2;
-    const top = (windowHeight - panelHeight) / 2;
-    
-    hotkeyConfig.style.left = `${left}px`;
-    hotkeyConfig.style.top = `${top}px`;
+    // Same positioning as used for context menu
+    hotkeyConfig.style.position = 'absolute';
+    hotkeyConfig.style.bottom = `${windowHeight - bubbleRect.top + 10}px`;
+    hotkeyConfig.style.left = '50%';
+    hotkeyConfig.style.transform = 'translateX(-50%)';
     
     // Track key combinations
     let keysPressed = new Set();
@@ -270,7 +271,8 @@ document.addEventListener('DOMContentLoaded', () => {
         keysPressed.delete(e.key);
         
         if (keysPressed.size === 0) {
-            display.classList.remove('key-pressed');
+            // Keep the key-pressed class to maintain style
+            // Just update the specific key combination
         }
     }
     
@@ -287,15 +289,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 window.api.setHotkey(keyCombo).then(success => {
                     if (success) {
-                        // Show saved confirmation
-                        display.textContent = 'Hotkey saved!';
-                        display.classList.add('success');
-                        saveButton.textContent = 'Save';
-                        
-                        // Close after a brief delay
-                        setTimeout(() => {
-                            closeHotkeyConfig();
-                        }, 1000);
+                        // Close immediately on success
+                        closeHotkeyConfig();
                     } else {
                         saveButton.textContent = 'Save';
                         saveButton.disabled = false;
@@ -362,46 +357,150 @@ document.addEventListener('DOMContentLoaded', () => {
     title.className = 'position-title';
     title.textContent = 'Screen Position';
     
-    const instructions = document.createElement('div');
-    instructions.className = 'position-instructions';
-    instructions.textContent = 'Select where the app should appear:';
+    // Create a custom dropdown that will look like the context menu
+    const customDropdownContainer = document.createElement('div');
+    customDropdownContainer.className = 'custom-dropdown-container';
     
-    // Create dropdown instead of grid
-    const dropdown = document.createElement('select');
-    dropdown.className = 'position-dropdown';
+    const selectedOption = document.createElement('div');
+    selectedOption.className = 'selected-option';
+    selectedOption.textContent = 'Bottom Center'; // Default
     
-    // Position options for the dropdown
+    // Add components to the container
+    customDropdownContainer.appendChild(selectedOption);
+    
+    // Position options
     const positions = [
-      { code: 'LT', label: 'Top Left' },
-      { code: 'MT', label: 'Top Center' },
-      { code: 'RT', label: 'Top Right' },
-      { code: 'LM', label: 'Middle Left' },
-      { code: 'RM', label: 'Middle Right' },
-      { code: 'LB', label: 'Bottom Left' },
-      { code: 'MB', label: 'Bottom Center' },
-      { code: 'RB', label: 'Bottom Right' }
+        { code: 'LT', label: 'Top Left' },
+        { code: 'MT', label: 'Top Center' },
+        { code: 'RT', label: 'Top Right' },
+        { code: 'LM', label: 'Middle Left' },
+        { code: 'RM', label: 'Middle Right' },
+        { code: 'LB', label: 'Bottom Left' },
+        { code: 'MB', label: 'Bottom Center' },
+        { code: 'RB', label: 'Bottom Right' }
     ];
     
     // Default to middle bottom if we can't get the setting
     let selectedPosition = 'MB';
-    
-    // Add options to dropdown
-    positions.forEach(pos => {
-      const option = document.createElement('option');
-      option.value = pos.code;
-      option.textContent = pos.label;
-      dropdown.appendChild(option);
-    });
+    let dropdownOptions = null;
+    let isDropdownOpen = false;
     
     // Get current position from settings
     window.api.getCurrentPosition().then(position => {
-      selectedPosition = position;
-      dropdown.value = selectedPosition;
+        selectedPosition = position;
+        // Find the label for this position code
+        const selectedPos = positions.find(p => p.code === position);
+        if (selectedPos) {
+            selectedOption.textContent = selectedPos.label;
+        }
     });
     
-    // Listen for changes
-    dropdown.addEventListener('change', function() {
-      selectedPosition = this.value;
+    // Function to create and position the dropdown options
+    function showDropdownOptions() {
+        // Remove any existing dropdown
+        if (dropdownOptions) {
+            dropdownOptions.remove();
+        }
+        
+        // Add dropdown-open class to position config
+        positionConfig.classList.add('dropdown-open');
+        
+        // Create dropdown options
+        dropdownOptions = document.createElement('div');
+        dropdownOptions.className = 'dropdown-options';
+        
+        // Append to document body
+        document.body.appendChild(dropdownOptions);
+        
+        // Create options
+        positions.forEach(pos => {
+            const option = document.createElement('div');
+            option.className = 'dropdown-option';
+            option.textContent = pos.label;
+            option.dataset.value = pos.code;
+            
+            // Simpler click handling
+            option.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log(`Selected position: ${pos.code} - ${pos.label}`);
+                selectedPosition = pos.code;
+                selectedOption.textContent = pos.label;
+                hideDropdownOptions();
+            });
+            
+            dropdownOptions.appendChild(option);
+        });
+        
+        // Position the dropdown relative to the selectedOption
+        const rect = selectedOption.getBoundingClientRect();
+        
+        // Always position above due to taskbar at bottom of screen
+        dropdownOptions.style.bottom = `${window.innerHeight - rect.top + 5}px`;
+        dropdownOptions.style.top = 'auto';
+        
+        // Set horizontal position
+        dropdownOptions.style.width = `${rect.width}px`;
+        dropdownOptions.style.left = `${rect.left}px`;
+        
+        // Ensure dropdown doesn't go off-screen horizontally
+        const dropdownRect = dropdownOptions.getBoundingClientRect();
+        if (dropdownRect.right > window.innerWidth) {
+            const overflow = dropdownRect.right - window.innerWidth;
+            dropdownOptions.style.left = `${rect.left - overflow - 5}px`;
+        }
+        
+        isDropdownOpen = true;
+        
+        // Add click event handlers to document to handle clicks outside
+        document.addEventListener('click', handleDocumentClick);
+        
+        // Add Esc key handler
+        document.addEventListener('keydown', handleEscKeyForDropdown);
+    }
+    
+    function handleDocumentClick(e) {
+        // If clicking outside the dropdown and not on the selected option, close the dropdown
+        if (dropdownOptions && 
+            !dropdownOptions.contains(e.target) && 
+            e.target !== selectedOption) {
+            hideDropdownOptions();
+        }
+    }
+    
+    function handleEscKeyForDropdown(e) {
+        if (e.key === 'Escape' && isDropdownOpen) {
+            hideDropdownOptions();
+        }
+    }
+    
+    // Function to hide dropdown options
+    function hideDropdownOptions() {
+        // Remove dropdown-open class from position config
+        positionConfig.classList.remove('dropdown-open');
+        
+        // Remove event listeners
+        document.removeEventListener('click', handleDocumentClick);
+        document.removeEventListener('keydown', handleEscKeyForDropdown);
+        
+        if (dropdownOptions) {
+            dropdownOptions.remove();
+            dropdownOptions = null;
+        }
+        isDropdownOpen = false;
+    }
+    
+    // Toggle dropdown when clicking the selected option
+    selectedOption.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        console.log('Selected option clicked');
+        
+        if (isDropdownOpen) {
+            hideDropdownOptions();
+        } else {
+            showDropdownOptions();
+        }
     });
     
     const buttonsContainer = document.createElement('div');
@@ -419,8 +518,7 @@ document.addEventListener('DOMContentLoaded', () => {
     buttonsContainer.appendChild(cancelButton);
     
     positionConfig.appendChild(title);
-    positionConfig.appendChild(instructions);
-    positionConfig.appendChild(dropdown);
+    positionConfig.appendChild(customDropdownContainer);
     positionConfig.appendChild(buttonsContainer);
     
     document.body.appendChild(positionConfig);
@@ -437,34 +535,20 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Handle button clicks
     saveButton.addEventListener('click', () => {
-      saveButton.textContent = 'Saving...';
-      saveButton.disabled = true;
-      
-      // Save position to settings
-      window.api.setPosition(selectedPosition).then(success => {
-        if (success) {
-          // Show saved confirmation
-          dropdown.style.display = 'none';
-          
-          const savedMessage = document.createElement('div');
-          savedMessage.className = 'position-saved';
-          savedMessage.textContent = 'Position saved!';
-          savedMessage.style.textAlign = 'center';
-          savedMessage.style.color = '#90ff91';
-          savedMessage.style.marginBottom = '14px';
-          
-          positionConfig.insertBefore(savedMessage, buttonsContainer);
-          
-          // Close after a brief delay
-          setTimeout(() => {
-            closePositionConfig();
-          }, 1000);
-        } else {
-          saveButton.textContent = 'Save';
-          saveButton.disabled = false;
-          console.error('Failed to save position');
-        }
-      });
+        saveButton.textContent = 'Saving...';
+        saveButton.disabled = true;
+        
+        // Save position to settings
+        window.api.setPosition(selectedPosition).then(success => {
+            if (success) {
+                // Just close immediately on success, no message
+                closePositionConfig();
+            } else {
+                saveButton.textContent = 'Save';
+                saveButton.disabled = false;
+                console.error('Failed to save position');
+            }
+        });
     });
     
     cancelButton.addEventListener('click', closePositionConfig);
@@ -473,25 +557,33 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', handleOutsideClick);
     
     function closePositionConfig() {
-      document.removeEventListener('click', handleOutsideClick);
-      
-      if (positionConfig.parentNode) {
-        positionConfig.remove();
-      }
+        document.removeEventListener('click', handleOutsideClick);
+        hideDropdownOptions();
+        
+        if (positionConfig.parentNode) {
+            positionConfig.remove();
+        }
     }
     
     function handleOutsideClick(e) {
-      if (!positionConfig.contains(e.target) && e.target !== positionConfig) {
-        closePositionConfig();
-      }
+        // If dropdown is open, close it first
+        if (isDropdownOpen && dropdownOptions && !dropdownOptions.contains(e.target)) {
+            hideDropdownOptions();
+            return;
+        }
+        
+        // If clicking completely outside the config, close everything
+        if (!positionConfig.contains(e.target)) {
+            closePositionConfig();
+        }
     }
     
     // Handle escape key to close
     document.addEventListener('keydown', function escHandler(e) {
-      if (e.key === 'Escape') {
-        document.removeEventListener('keydown', escHandler);
-        closePositionConfig();
-      }
+        if (e.key === 'Escape') {
+            document.removeEventListener('keydown', escHandler);
+            closePositionConfig();
+        }
     });
   }
   
