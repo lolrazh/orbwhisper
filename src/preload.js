@@ -8,19 +8,15 @@ const { contextBridge, ipcRenderer } = require('electron');
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld(
   'api', {
-    // Window control functions
-    toggleDictation: () => ipcRenderer.send('toggle-dictation'),
-    moveWindow: (moveX, moveY) => ipcRenderer.send('move-window', { moveX, moveY }),
-    setWindowPosition: (x, y) => ipcRenderer.send('set-window-position', { x, y }),
-    getWindowPosition: () => ipcRenderer.invoke('get-window-position'),
+    // App control functions
     closeApp: () => ipcRenderer.send('close-app'),
     hideApp: () => ipcRenderer.send('hide-app'),
     
-    // Audio recording and transcription functions - WebRTC version
+    // Audio recording and transcription functions
     startRecording: () => ipcRenderer.invoke('start-recording'),
     stopRecordingAndTranscribe: () => ipcRenderer.invoke('stop-recording-and-transcribe'),
     
-    // New WebRTC audio functions
+    // WebRTC audio functions
     sendAudioChunk: (chunk) => ipcRenderer.invoke('send-audio-chunk', chunk),
     finalizeAudioRecording: () => ipcRenderer.invoke('finalize-audio-recording'),
     

@@ -18,9 +18,9 @@ function createWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
   
-  // Updated window dimensions to match CSS changes
-  const winWidth = 200; // Reduced from 270px to 200px
-  const winHeight = 200; // Increased to 200px to ensure context menu fits
+  // Window dimensions
+  const winWidth = 200;
+  const winHeight = 200;
   
   // Create the browser window - centered horizontally
   mainWindow = new BrowserWindow({
@@ -33,7 +33,7 @@ function createWindow() {
     alwaysOnTop: true, // Always on top of other windows
     skipTaskbar: true, // Don't show in taskbar
     resizable: false, // Not resizable
-    movable: false,  // We'll implement custom move
+    movable: false,  // Fixed position
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
@@ -120,62 +120,22 @@ app.on('will-quit', () => {
   globalShortcut.unregisterAll();
 });
 
-// Handle window movement (vertical only)
-ipcMain.on('move-window', (event, { moveX, moveY }) => {
-  if (mainWindow) {
-    const [x, y] = mainWindow.getPosition();
-    const primaryDisplay = screen.getPrimaryDisplay();
-    const { height: screenHeight } = primaryDisplay.workAreaSize;
-    const [winWidth, winHeight] = mainWindow.getSize();
-    
-    // Only allow vertical movement, ignore horizontal
-    let newY = Math.round(y + moveY);
-    
-    // Apply bounds checking for vertical position
-    newY = Math.max(0, Math.min(screenHeight - winHeight, newY));
-    
-    // Keep x position the same (centered)
-    mainWindow.setPosition(x, newY, false);
-  }
-});
-
-// Handle absolute window positioning (vertical only)
-ipcMain.on('set-window-position', (event, { x, y }) => {
-  if (mainWindow) {
-    // Get current position to maintain horizontal center
-    const [currentX, currentY] = mainWindow.getPosition();
-    
-    // Ensure the window stays visible on screen vertically
-    const { height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
-    const [winWidth, winHeight] = mainWindow.getSize();
-    
-    // Apply bounds checking for vertical only
-    const boundedY = Math.max(0, Math.min(screenHeight - winHeight, Math.round(y)));
-    
-    // Set the position - keep x the same, only change y
-    mainWindow.setPosition(currentX, boundedY, false);
-  }
-});
-
-// Get current window position
-ipcMain.handle('get-window-position', () => {
-  if (mainWindow) {
-    return mainWindow.getPosition();
-  }
-  return [0, 0];
-});
-
 //=====================================================================
 // Audio Processing IPC Handlers
 //=====================================================================
+
+// Generic error handler for IPC calls
+function handleIpcError(operation, err) {
+  console.error(`Error during ${operation}:`, err);
+  return err.message ? { error: err.message } : false;
+}
 
 // Start recording
 ipcMain.handle('start-recording', async () => {
   try {
     return await whisperApi.startRecording();
   } catch (err) {
-    console.error('Error starting recording:', err);
-    return false;
+    return handleIpcError('starting recording', err);
   }
 });
 
@@ -184,8 +144,7 @@ ipcMain.handle('send-audio-chunk', async (event, chunk) => {
   try {
     return await whisperApi.addAudioChunk(chunk);
   } catch (err) {
-    console.error('Error processing audio chunk:', err);
-    return false;
+    return handleIpcError('processing audio chunk', err);
   }
 });
 
@@ -194,8 +153,7 @@ ipcMain.handle('finalize-audio-recording', async () => {
   try {
     return await whisperApi.finalizeRecording();
   } catch (err) {
-    console.error('Error finalizing recording:', err);
-    return false;
+    return handleIpcError('finalizing recording', err);
   }
 });
 
@@ -204,8 +162,7 @@ ipcMain.handle('stop-recording-and-transcribe', async () => {
   try {
     return await whisperApi.getDictationText();
   } catch (err) {
-    console.error('Error transcribing audio:', err);
-    return { error: err.message };
+    return handleIpcError('transcribing audio', err);
   }
 });
 
@@ -214,8 +171,7 @@ ipcMain.handle('type-text', async (event, text) => {
   try {
     return await keyboardSim.typeText(text);
   } catch (err) {
-    console.error('Error typing text:', err);
-    return { error: err.message };
+    return handleIpcError('typing text', err);
   }
 });
 

@@ -32,7 +32,7 @@ body {
   transition: width 0.3s ease-out;
 }
 
-/* Main bubble */
+/* Bubble styles */
 #bubble {
   width: 50px;
   height: 50px;
@@ -53,8 +53,8 @@ body {
 }
 
 #bubble-inner {
-  width: 40px; /* Restored to original size */
-  height: 40px; /* Restored to original size */
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: linear-gradient(135deg, #5e72eb, #ff9190);
   opacity: 0.9;
@@ -62,13 +62,12 @@ body {
   box-shadow: 0 0 8px rgba(255, 145, 144, 0.2), 0 2px 4px rgba(0, 0, 0, 0.2); /* Combined glow and subtle drop shadow */
 }
 
-/* Removing the animation from active state - will be used for pasting state */
+/* Bubble states */
 #bubble.active #bubble-inner {
   opacity: 1;
   box-shadow: 0 0 10px rgba(255, 145, 144, 0.25), 0 3px 5px rgba(0, 0, 0, 0.25); /* Enhanced glow with subtle drop shadow */
 }
 
-/* New class for pasting animation - modified to pulse intensity rather than going to zero */
 #bubble.pasting #bubble-inner {
   opacity: 1;
   animation: subtle-pulse 1.5s ease-in-out infinite;
@@ -79,38 +78,29 @@ body {
   display: none;
 }
 
-/* Also hide status text when collapsed (after dictation finishes) */
-#app-container.collapsed #status-text {
-  display: none;
-}
-
-/* Only show status text when there's an error or when specifically needed */
-#app-container.show-status #status-text {
-  display: block;
-}
-
-/* Expanded panel - now positioned closer to the bubble */
+/* Expanded panel - frequency visualization */
 #expanded-panel {
-  height: 36px; /* Reduced height further */
-  width: 120px; /* Smaller width */
-  background: #1a1a1a; /* Solid dark gray background */
+  height: 36px;
+  width: 120px;
+  background: #1a1a1a;
   border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0 10px;
-  margin-bottom: 0px; /* Closest to the orb - was 3px */
+  margin-bottom: 0px;
   transition: opacity 0.3s ease, transform 0.3s ease;
   box-shadow: 0 0 10px rgba(255, 145, 144, 0.15), 0 3px 5px rgba(0, 0, 0, 0.2); /* Added subtle drop shadow */
-  overflow: hidden; /* Hide content when collapsed */
+  overflow: hidden;
   opacity: 1;
-  backdrop-filter: blur(5px); /* Add blur effect */
+  backdrop-filter: blur(5px);
   position: absolute;
-  bottom: 55px; /* Position closer to the orb - was 60px */
+  bottom: 55px;
   transform: translateY(20px); /* Initial position for animation */
   pointer-events: none; /* Allow clicking through when not needed */
 }
 
+/* Panel states */
 #app-container.collapsed #expanded-panel {
   transform: translateY(20px);
   opacity: 0;
@@ -126,39 +116,45 @@ body {
 #status-text {
   color: white;
   font-size: 14px;
-  font-weight: 500; /* Medium weight for better readability */
+  font-weight: 500;
   white-space: nowrap;
   text-align: center;
 }
 
-/* Frequency animation bars - enhanced version */
+/* Frequency animation bars */
 #frequency-animation {
   display: flex;
   align-items: center;
-  justify-content: center; /* Center bars */
+  justify-content: center;
   height: 30px;
-  width: 90px; /* Increased width for better spacing (was 80px) */
+  width: 90px;
 }
 
 .bar {
-  width: 3.5px; /* Increased width by ~10% (was 3px) */
+  width: 3.5px;
   height: 12px;
   background: linear-gradient(to top, #5e72eb, #ff9190);
-  margin: 0 1.5px; /* Increased spacing by ~10% (was 1px) */
+  margin: 0 1.5px;
   border-radius: 2px;
   transform-origin: bottom;
-  box-shadow: 0 0 3px rgba(255, 145, 144, 0.15); /* Reduced glow to 25% */
+  box-shadow: 0 0 3px rgba(255, 145, 144, 0.15);
   transition: height 0.1s ease;
 }
 
-/* Animation for bars */
+/* Animation keyframes */
 @keyframes equalize {
   0% { height: 5px; opacity: 0.7; }
   50% { height: 25px; opacity: 1; }
   100% { height: 5px; opacity: 0.7; }
 }
 
-/* Make bars animate at different speeds */
+@keyframes subtle-pulse {
+  0% { transform: scale(1); box-shadow: 0 0 8px rgba(255, 145, 144, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2); }
+  50% { transform: scale(1.1); box-shadow: 0 0 15px rgba(255, 145, 144, 0.5), 0 3px 6px rgba(0, 0, 0, 0.3); }
+  100% { transform: scale(1); box-shadow: 0 0 8px rgba(255, 145, 144, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2); }
+}
+
+/* Bar animations with different timing */
 .bar:nth-child(1) { animation: equalize 1.2s ease-in-out infinite; }
 .bar:nth-child(2) { animation: equalize 1.7s ease-in-out infinite; animation-delay: 0.1s; }
 .bar:nth-child(3) { animation: equalize 1.4s ease-in-out infinite; animation-delay: 0.2s; }
@@ -172,76 +168,68 @@ body {
 .bar:nth-child(11) { animation: equalize 1.4s ease-in-out infinite; animation-delay: 0.25s; }
 .bar:nth-child(12) { animation: equalize 1.0s ease-in-out infinite; animation-delay: 0.35s; }
 
-/* Animation for the subtle pulse effect that doesn't go to zero */
-@keyframes subtle-pulse {
-  0% { transform: scale(1); box-shadow: 0 0 8px rgba(255, 145, 144, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2); }
-  50% { transform: scale(1.1); box-shadow: 0 0 15px rgba(255, 145, 144, 0.5), 0 3px 6px rgba(0, 0, 0, 0.3); }
-  100% { transform: scale(1); box-shadow: 0 0 8px rgba(255, 145, 144, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2); }
-}
-
-/* Context menu styling - positioned centered above the orb */
+/* Context menu styling */
 .context-menu {
   position: absolute;
-  bottom: 70px; /* Position above the orb */
+  bottom: 70px;
   left: 50%;
   transform: translateX(-50%);
-  background: #1a1a1a; /* Matching the frequency panel */
+  background: #1a1a1a;
   border-radius: 16px;
   padding: 6px 0;
-  min-width: 150px; /* Reduced from 180px */
-  box-shadow: 0 0 10px rgba(255, 145, 144, 0.15), 0 3px 5px rgba(0, 0, 0, 0.2); /* Added subtle drop shadow */
+  min-width: 150px;
+  box-shadow: 0 0 10px rgba(255, 145, 144, 0.15), 0 3px 5px rgba(0, 0, 0, 0.2);
   z-index: 1000;
-  backdrop-filter: blur(5px); /* Add blur effect */
-  overflow: hidden; /* Hide scrollbars */
+  backdrop-filter: blur(5px);
+  overflow: hidden;
 }
 
 .context-menu-item {
-  padding: 6px 16px; /* Further reduced padding */
+  padding: 6px 16px;
   color: white;
-  font-size: 12px; /* Smaller font */
-  font-weight: 400; /* Normal weight instead of bold */
+  font-size: 12px;
+  font-weight: 400;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin: 0 5px; /* Add margin for rounded rectangle effect */
-  border-radius: 8px; /* Rounded corners for hover state */
-  line-height: 1.2; /* Tighter line height */
+  margin: 0 5px;
+  border-radius: 8px;
+  line-height: 1.2;
 }
 
 .context-menu-item:hover {
-  background-color: rgba(255, 145, 144, 0.2); /* Subtle pink highlight */
+  background-color: rgba(255, 145, 144, 0.2);
 }
 
-/* Style for dummy buttons */
 .context-menu-item.dummy-button {
-  opacity: 0.7; /* Slightly dimmed to indicate not fully functional */
-  cursor: default; /* Change cursor to indicate non-clickable */
+  opacity: 0.7;
+  cursor: default;
 }
 
 .context-menu-item.dummy-button:hover {
-  background-color: rgba(255, 145, 144, 0.1); /* Less prominent hover effect */
+  background-color: rgba(255, 145, 144, 0.1);
 }
 
 .context-menu-separator {
   height: 1px;
   background-color: rgba(255, 255, 255, 0.1);
-  margin: 3px 10px; /* Reduced vertical margin */
+  margin: 3px 10px;
 }
 
 /* Debug panel - visible only in development mode */
 #debug-panel {
   position: absolute;
-  top: 80px; /* Position below the main UI */
+  top: 80px;
   right: 10px;
   width: 250px;
   max-height: 200px;
   overflow-y: auto;
-  background: #1a1a1a; /* Matching other UI elements */
+  background: #1a1a1a;
   border-radius: 16px;
   padding: 10px;
   color: white;
   font-size: 12px;
   transition: opacity 0.3s ease;
-  box-shadow: 0 0 10px rgba(255, 145, 144, 0.15), 0 3px 5px rgba(0, 0, 0, 0.2); /* Added subtle drop shadow */
+  box-shadow: 0 0 10px rgba(255, 145, 144, 0.15), 0 3px 5px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(5px);
 }
 

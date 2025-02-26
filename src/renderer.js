@@ -20,21 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let isDictating = false;
   let isPasting = false;
   
-  // Remove initial "Ready to dictate" text
-  statusText.textContent = '';
-  
-  // Function to temporarily show status text
-  function showStatusTemporarily(message, duration = 3000) {
-    if (message) {
-      statusText.textContent = message;
-      appContainer.classList.add('show-status');
-      
-      setTimeout(() => {
-        appContainer.classList.remove('show-status');
-      }, duration);
-    }
-  }
-  
   // WebRTC Audio Recording variables
   let mediaRecorder = null;
   let mediaStream = null;
@@ -54,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Add menu items
     const menuItems = [
-      { label: 'Hide App', action: dummyAction, isDummy: true },
+      { label: 'Hide App', action: hideApp, isDummy: false },
       { label: 'Hotkey', action: dummyAction, isDummy: true },
       { type: 'separator' },
       { label: 'Close App', action: closeApp }
@@ -127,18 +112,9 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Dummy action for non-functional buttons
   function dummyAction() {
-    console.log('This button is not yet implemented');
-  }
-  
-  // Context menu actions
-  function showAbout() {
-    // Display a temporary message in the status text
-    statusText.textContent = 'SandyWhisper v1.0 - Powered by OpenAI Whisper';
-    setTimeout(() => {
-      if (!isDictating) {
-        statusText.textContent = 'Ready to dictate';
-      }
-    }, 3000);
+    if (isDev) {
+      console.log('This button is not yet implemented');
+    }
   }
   
   function hideApp() {
@@ -249,6 +225,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
+  // Helper function to reset the status text after a delay
+  function resetStatusTextAfterDelay() {
+    setTimeout(() => {
+      if (!isDictating && !isPasting) {
+        statusText.textContent = 'Ready to dictate';
+      }
+    }, 3000);
+  }
+  
   // Initialize WebRTC recording on startup
   setupAudioRecording().catch(error => {
     console.error('Error setting up audio recording:', error);
@@ -263,7 +248,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isDictating) {
       // Expand the UI
       appContainer.classList.remove('collapsed');
-      appContainer.classList.remove('show-status');
       appContainer.classList.add('recording'); // Add recording class to hide status text
       bubble.classList.add('active');
       
@@ -275,13 +259,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const webrtcStarted = startWebRTCRecording();
         
         if (!webrtcStarted) {
-          showStatusTemporarily('Failed to start recording');
+          statusText.textContent = 'Failed to start recording';
           isDictating = false;
           bubble.classList.remove('active');
           appContainer.classList.remove('recording');
         }
       } else {
-        showStatusTemporarily('Failed to start recording');
+        statusText.textContent = 'Failed to start recording';
         isDictating = false;
         bubble.classList.remove('active');
         appContainer.classList.remove('recording');
@@ -292,7 +276,6 @@ document.addEventListener('DOMContentLoaded', () => {
       bubble.classList.remove('active');
       bubble.classList.add('pasting');
       appContainer.classList.remove('recording');
-      appContainer.classList.remove('show-status');
       
       // Stop WebRTC recording first
       await stopWebRTCRecording();
@@ -301,6 +284,9 @@ document.addEventListener('DOMContentLoaded', () => {
       window.api.stopRecordingAndTranscribe()
         .then(result => {
           if (result && result.text) {
+            // Show the transcribed text briefly
+            statusText.textContent = `Typing: "${result.text.substring(0, 20)}${result.text.length > 20 ? '...' : ''}"`;
+            
             // For debugging, show the transcribed text
             if (isDev && transcribedTextElement) {
               const timestamp = new Date().toLocaleTimeString();
@@ -315,26 +301,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 isPasting = false;
                 
                 if (typeResult.error) {
-                  showStatusTemporarily(`Error: ${typeResult.error}`);
+                  statusText.textContent = `Error: ${typeResult.error}`;
                 }
+                resetStatusTextAfterDelay();
               })
               .catch(err => {
                 console.error('Typing error:', err);
-                showStatusTemporarily('Typing failed');
+                statusText.textContent = 'Typing failed';
                 bubble.classList.remove('pasting');
                 isPasting = false;
+                resetStatusTextAfterDelay();
               });
           } else if (result.error) {
-            showStatusTemporarily(`Error: ${result.error}`);
+            statusText.textContent = `Error: ${result.error}`;
             bubble.classList.remove('pasting');
             isPasting = false;
+            resetStatusTextAfterDelay();
           }
         })
         .catch(err => {
           console.error('Transcription error:', err);
-          showStatusTemporarily('Transcription failed');
+          statusText.textContent = 'Transcription failed';
           bubble.classList.remove('pasting');
           isPasting = false;
+          resetStatusTextAfterDelay();
         });
       
       // Collapse the UI
@@ -342,17 +332,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  // Click events for UI elements
+  // Set up event listeners
   
   // Handle bubble clicks
-  bubble.addEventListener('click', () => {
-    toggleDictation();
-  });
+  bubble.addEventListener('click', toggleDictation);
   
   // Handle clicking on expanded panel
-  expandedPanel.addEventListener('click', () => {
-    toggleDictation();
-  });
+  expandedPanel.addEventListener('click', toggleDictation);
   
   // Context menu (right-click) handler
   document.addEventListener('contextmenu', (e) => {
@@ -361,14 +347,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   
   // Listen for toggle event from main process (global hotkey)
-  window.api.onToggleDictation(() => {
-    toggleDictation();
-  });
+  window.api.onToggleDictation(toggleDictation);
   
   // Handle keyboard shortcut (space) for testing in the UI
-  document.addEventListener('keydown', (event) => {
-    if (event.code === 'Space') {
-      toggleDictation();
-    }
-  });
+  if (isDev) {
+    document.addEventListener('keydown', (event) => {
+      if (event.code === 'Space') {
+        toggleDictation();
+      }
+    });
+  }
 }); 
