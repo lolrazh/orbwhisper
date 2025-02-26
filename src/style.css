@@ -35,21 +35,22 @@ body {
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: rgba(20, 20, 20, 0.7);
+  background: rgba(0, 0, 0, 1); /* Fully opaque black */
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   z-index: 10;
   position: relative; /* Keep bubble positioned on the right */
   flex-shrink: 0; /* Prevent bubble from shrinking */
+  backdrop-filter: blur(2px); /* Add blur effect */
 }
 
 #bubble:hover {
   transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 #bubble-inner {
@@ -58,15 +59,26 @@ body {
   border-radius: 50%;
   background: linear-gradient(135deg, #5e72eb, #ff9190);
   opacity: 0.9;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.3s ease, box-shadow 0.3s ease;
 }
 
+/* Removing the animation from active state - will be used for pasting state */
 #bubble.active #bubble-inner {
+  opacity: 1;
+}
+
+/* New class for pasting animation */
+#bubble.pasting #bubble-inner {
   opacity: 1;
   animation: pulse 1.5s ease-in-out infinite;
 }
 
-/* Close button */
+/* Hide status text when recording */
+#app-container.recording #status-text {
+  display: none;
+}
+
+/* Close button - will be removed in HTML */
 #close-button {
   position: absolute;
   top: 5px;
@@ -106,6 +118,7 @@ body {
   overflow: hidden; /* Hide content when collapsed */
   width: 200px; /* Fixed width to show when expanded */
   opacity: 1;
+  backdrop-filter: blur(5px); /* Add blur effect */
 }
 
 #app-container.collapsed #expanded-panel {
@@ -166,10 +179,34 @@ body {
   100% { transform: scale(1); box-shadow: 0 0 5px rgba(255, 145, 144, 0.6); }
 }
 
-/* Enhanced pulse animation for active bubble */
-#bubble.active #bubble-inner {
-  opacity: 1;
-  animation: pulse 1.5s ease-in-out infinite;
+/* Context menu styling */
+.context-menu {
+  position: absolute;
+  background: rgba(20, 20, 20, 0.9);
+  border-radius: 8px;
+  padding: 8px 0;
+  min-width: 150px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+}
+
+.context-menu-item {
+  padding: 8px 16px;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.context-menu-item:hover {
+  background-color: rgba(94, 114, 235, 0.2);
+}
+
+.context-menu-separator {
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.1);
+  margin: 5px 0;
 }
 
 /* Debug panel - visible only in development mode */
@@ -187,6 +224,7 @@ body {
   font-size: 12px;
   transition: opacity 0.3s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(5px);
 }
 
 #debug-panel.hidden {

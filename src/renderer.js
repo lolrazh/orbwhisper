@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const bubble = document.getElementById('bubble');
   const expandedPanel = document.getElementById('expanded-panel');
   const statusText = document.getElementById('status-text');
-  const closeButton = document.getElementById('close-button');
   const debugPanel = document.getElementById('debug-panel');
   const transcribedTextElement = document.getElementById('transcribed-text');
   
@@ -19,10 +18,100 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Track dictation state
   let isDictating = false;
+  let isPasting = false;
   
   // WebRTC Audio Recording variables
   let mediaRecorder = null;
   let mediaStream = null;
+  
+  // Create context menu
+  function createContextMenu(x, y) {
+    // Remove any existing context menus
+    removeContextMenu();
+    
+    // Create context menu element
+    const contextMenu = document.createElement('div');
+    contextMenu.className = 'context-menu';
+    contextMenu.style.left = `${x}px`;
+    contextMenu.style.top = `${y}px`;
+    
+    // Add menu items
+    const menuItems = [
+      { label: 'About SandyWhisper', action: showAbout },
+      { type: 'separator' },
+      { label: 'Hide App', action: hideApp },
+      { label: 'Close App', action: closeApp }
+    ];
+    
+    menuItems.forEach(item => {
+      if (item.type === 'separator') {
+        const separator = document.createElement('div');
+        separator.className = 'context-menu-separator';
+        contextMenu.appendChild(separator);
+      } else {
+        const menuItem = document.createElement('div');
+        menuItem.className = 'context-menu-item';
+        menuItem.textContent = item.label;
+        menuItem.addEventListener('click', () => {
+          item.action();
+          removeContextMenu();
+        });
+        contextMenu.appendChild(menuItem);
+      }
+    });
+    
+    // Add to body
+    document.body.appendChild(contextMenu);
+    
+    // Handle clicking outside the menu to close it
+    document.addEventListener('click', removeContextMenu, { once: true });
+  }
+  
+  // Remove context menu
+  function removeContextMenu() {
+    const existingMenu = document.querySelector('.context-menu');
+    if (existingMenu) {
+      existingMenu.remove();
+    }
+  }
+  
+  // Context menu actions
+  function showAbout() {
+    // Display a temporary message in the status text
+    statusText.textContent = 'SandyWhisper v1.0 - Powered by OpenAI Whisper';
+    setTimeout(() => {
+      if (!isDictating) {
+        statusText.textContent = 'Ready to dictate';
+      }
+    }, 3000);
+  }
+  
+  function hideApp() {
+    // Stop any ongoing recording first
+    if (isDictating) {
+      stopWebRTCRecording().catch(console.error);
+      isDictating = false;
+      bubble.classList.remove('active');
+      appContainer.classList.remove('recording');
+      appContainer.classList.add('collapsed');
+    }
+    
+    window.api.hideApp();
+  }
+  
+  function closeApp() {
+    // Stop any ongoing recording
+    if (isDictating) {
+      stopWebRTCRecording().catch(console.error);
+    }
+    
+    // Stop and release media stream if it exists
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+    }
+    
+    window.api.closeApp();
+  }
   
   // Function to setup WebRTC audio recording
   async function setupAudioRecording() {
@@ -112,13 +201,15 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Function to toggle dictation mode
   async function toggleDictation() {
+    if (isPasting) return; // Don't toggle if currently pasting
+    
     isDictating = !isDictating;
     
     if (isDictating) {
       // Expand the UI
       appContainer.classList.remove('collapsed');
+      appContainer.classList.add('recording'); // Add recording class to hide status text
       bubble.classList.add('active');
-      statusText.textContent = 'Listening...';
       
       // Start recording - first in main process to set up state
       const mainProcessStarted = await window.api.startRecording();
@@ -131,13 +222,22 @@ document.addEventListener('DOMContentLoaded', () => {
           statusText.textContent = 'Failed to start recording';
           isDictating = false;
           bubble.classList.remove('active');
+          appContainer.classList.remove('recording');
         }
       } else {
         statusText.textContent = 'Failed to start recording';
         isDictating = false;
         bubble.classList.remove('active');
+        appContainer.classList.remove('recording');
       }
     } else {
+      // Add pasting state
+      isPasting = true;
+      bubble.classList.remove('active');
+      bubble.classList.add('pasting');
+      appContainer.classList.remove('recording');
+      statusText.textContent = 'Processing...';
+      
       // Stop WebRTC recording first
       await stopWebRTCRecording();
       
@@ -157,6 +257,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Simulate typing the text
             window.api.typeText(result.text)
               .then(typeResult => {
+                // Remove pasting state
+                bubble.classList.remove('pasting');
+                isPasting = false;
+                
                 if (typeResult.error) {
                   statusText.textContent = `Error: ${typeResult.error}`;
                 }
@@ -164,18 +268,23 @@ document.addEventListener('DOMContentLoaded', () => {
               .catch(err => {
                 console.error('Typing error:', err);
                 statusText.textContent = 'Typing failed';
+                bubble.classList.remove('pasting');
+                isPasting = false;
               });
             
             // Reset status after a short delay
             setTimeout(() => {
-              if (!isDictating) {
+              if (!isDictating && !isPasting) {
                 statusText.textContent = 'Ready to dictate';
               }
             }, 3000);
           } else if (result.error) {
             statusText.textContent = `Error: ${result.error}`;
+            bubble.classList.remove('pasting');
+            isPasting = false;
+            
             setTimeout(() => {
-              if (!isDictating) {
+              if (!isDictating && !isPasting) {
                 statusText.textContent = 'Ready to dictate';
               }
             }, 3000);
@@ -184,8 +293,11 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(err => {
           console.error('Transcription error:', err);
           statusText.textContent = 'Transcription failed';
+          bubble.classList.remove('pasting');
+          isPasting = false;
+          
           setTimeout(() => {
-            if (!isDictating) {
+            if (!isDictating && !isPasting) {
               statusText.textContent = 'Ready to dictate';
             }
           }, 3000);
@@ -193,7 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Collapse the UI
       appContainer.classList.add('collapsed');
-      bubble.classList.remove('active');
     }
   }
   
@@ -209,21 +320,10 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleDictation();
   });
   
-  // Close button handler
-  closeButton.addEventListener('click', (e) => {
-    e.stopPropagation();
-    
-    // Stop any ongoing recording
-    if (isDictating) {
-      stopWebRTCRecording().catch(console.error);
-    }
-    
-    // Stop and release media stream if it exists
-    if (mediaStream) {
-      mediaStream.getTracks().forEach(track => track.stop());
-    }
-    
-    window.api.closeApp();
+  // Context menu (right-click) handler
+  document.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    createContextMenu(e.clientX, e.clientY);
   });
   
   // Listen for toggle event from main process (global hotkey)

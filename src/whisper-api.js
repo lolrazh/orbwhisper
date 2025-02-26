@@ -11,9 +11,7 @@ const os = require('os');
 let openai;
 let isRecording = false;
 let audioFilePath = '';
-let recordingTimeout = null;
 let audioChunks = []; 
-let maxRecordingLength = 30000; // Maximum recording length in ms (30 seconds)
 let useFallbackMode = false; // Flag for fallback mode
 
 // Initialize the OpenAI client with API key
@@ -49,14 +47,6 @@ function startRecording() {
       // Create a temporary file path for the final audio
       const tmpDir = os.tmpdir();
       audioFilePath = path.join(tmpDir, `whisper_recording_${Date.now()}.webm`);
-      
-      // Set timeout to automatically stop if recording goes too long
-      recordingTimeout = setTimeout(() => {
-        if (isRecording) {
-          console.log('Auto-stopping recording after timeout');
-          stopRecording();
-        }
-      }, maxRecordingLength);
       
       // Mark as recording and resolve
       isRecording = true;
@@ -109,11 +99,6 @@ function stopRecording() {
   
   console.log('Stopping audio recording');
   isRecording = false;
-  
-  if (recordingTimeout) {
-    clearTimeout(recordingTimeout);
-    recordingTimeout = null;
-  }
   
   return true;
 }

@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld(
     setWindowPosition: (x, y) => ipcRenderer.send('set-window-position', { x, y }),
     getWindowPosition: () => ipcRenderer.invoke('get-window-position'),
     closeApp: () => ipcRenderer.send('close-app'),
+    hideApp: () => ipcRenderer.send('hide-app'),
     
     // Audio recording and transcription functions - WebRTC version
     startRecording: () => ipcRenderer.invoke('start-recording'),

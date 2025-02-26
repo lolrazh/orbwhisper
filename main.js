@@ -223,4 +223,11 @@ ipcMain.handle('type-text', async (event, text) => {
 ipcMain.on('close-app', () => {
   app.isQuitting = true;
   app.quit();
+});
+
+// Handle hide app request
+ipcMain.on('hide-app', () => {
+  if (mainWindow && mainWindow.isVisible()) {
+    mainWindow.hide();
+  }
 }); 
