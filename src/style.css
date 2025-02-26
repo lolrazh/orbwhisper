@@ -227,8 +227,7 @@ body {
   padding: 10px;
   min-width: 150px;
   box-shadow: 
-    0 8px 16px rgba(0, 0, 0, 0.5),      /* Enhanced black drop shadow */
-    0 0 12px rgba(255, 185, 144, 0.25);  /* Enhanced yellowish glow */
+    0 8px 16px rgba(0, 0, 0, 0.5);      /* Keep only the drop shadow, remove the glow */
   z-index: 1000;
   font-family: 'Inter', sans-serif;
   user-select: none;
@@ -311,8 +310,7 @@ body {
   background: rgba(20, 20, 20, 1);
   border-radius: 8px;
   box-shadow: 
-    0 10px 20px rgba(0, 0, 0, 0.5),      /* Enhanced black drop shadow */
-    0 0 12px rgba(255, 185, 144, 0.25);  /* Enhanced yellowish glow */
+    0 8px 16px rgba(0, 0, 0, 0.5);      /* Keep only the drop shadow, remove the glow */
   z-index: 1000;
   font-family: 'Inter', sans-serif;
   color: #fff;
@@ -413,8 +411,7 @@ body {
   background: rgba(20, 20, 20, 1);
   border-radius: 8px;
   box-shadow: 
-    0 10px 20px rgba(0, 0, 0, 0.5),      /* Enhanced black drop shadow */
-    0 0 12px rgba(255, 185, 144, 0.25);  /* Enhanced yellowish glow */
+    0 8px 16px rgba(0, 0, 0, 0.5);      /* Keep only the drop shadow, remove the glow */
   z-index: 1000;
   font-family: 'Inter', sans-serif;
   color: #fff;
@@ -500,8 +497,7 @@ body {
   overflow: visible;
   z-index: 10000;
   box-shadow: 
-    0 8px 16px rgba(0, 0, 0, 0.5),
-    0 0 12px rgba(255, 185, 144, 0.25);
+    0 8px 16px rgba(0, 0, 0, 0.5); /* Removed yellowish glow, keeping only the drop shadow */
   max-height: none !important;
   pointer-events: auto;
 }
