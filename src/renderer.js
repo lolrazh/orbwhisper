@@ -32,6 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Create context menu - completely new implementation
   function createContextMenu(x, y) {
+    console.log('Creating context menu...');
+    
     // Remove any existing menu first
     const existingMenu = document.querySelector('.context-menu');
     if (existingMenu) {
@@ -43,12 +45,21 @@ document.addEventListener('DOMContentLoaded', () => {
     menu.className = 'context-menu';
     document.body.appendChild(menu);
     
-    // Add menu items
+    // Add menu items - removed Hide App and added Screen Position
     const menuItems = [
-      { label: 'Hide App', action: hideApp, isDummy: false },
-      { label: 'Hotkey', action: showHotkeyConfig, isDummy: false },
+      { label: 'Screen Position', action: () => {
+        console.log('Screen Position clicked');
+        showPositionConfig();
+      }},
+      { label: 'Hotkey', action: () => {
+        console.log('Hotkey clicked');
+        showHotkeyConfig();
+      }},
       { type: 'separator' },
-      { label: 'Close App', action: closeApp }
+      { label: 'Close App', action: () => {
+        console.log('Close App clicked');
+        closeApp();
+      }}
     ];
     
     // Add items to menu
@@ -64,17 +75,27 @@ document.addEventListener('DOMContentLoaded', () => {
         menuItem.textContent = item.label;
         
         // Add click handler
-        menuItem.addEventListener('click', () => {
+        menuItem.addEventListener('click', (event) => {
+          console.log(`Menu item clicked: ${item.label}`);
+          event.stopPropagation(); // Prevent the click from being captured elsewhere
           hideContextMenu();
-          item.action();
+          // Use setTimeout to ensure menu is hidden before action executes
+          setTimeout(() => {
+            item.action();
+          }, 50);
         });
         
         menu.appendChild(menuItem);
       }
     });
     
+    // Position the menu next to the bubble
+    const bubbleRect = bubble.getBoundingClientRect();
+    menu.style.bottom = `${window.innerHeight - bubbleRect.top + 10}px`;
+    
     // Function to hide context menu
     function hideContextMenu() {
+      console.log('Hiding context menu');
       if (menu && document.body.contains(menu)) {
         document.body.removeChild(menu);
         window.removeEventListener('blur', hideContextMenu);
@@ -85,8 +106,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Handle clicks outside the menu
     function handleOutsideClick(event) {
-      // Check if the click was outside the menu
-      if (menu && !menu.contains(event.target)) {
+      // Check if the click was outside the menu and bubble
+      if (menu && !menu.contains(event.target) && !bubble.contains(event.target)) {
+        console.log('Click outside menu detected');
         hideContextMenu();
       }
     }
@@ -94,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle escape key press
     function handleEscapeKey(event) {
       if (event.key === 'Escape') {
+        console.log('Escape key pressed');
         hideContextMenu();
       }
     }
@@ -114,6 +137,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.api.onToggleDictation(() => {
       hideContextMenu();
     });
+    
+    // Expose the hideContextMenu function
+    return { hideContextMenu };
   }
   
   // Show hotkey configuration UI
@@ -315,6 +341,157 @@ document.addEventListener('DOMContentLoaded', () => {
             document.removeEventListener('keydown', escHandler);
             closeHotkeyConfig();
         }
+    });
+  }
+  
+  // Show screen position configuration UI
+  function showPositionConfig() {
+    console.log('Opening screen position configuration');
+    
+    // Remove existing position config panel if it exists
+    const existingPanel = document.querySelector('.position-config');
+    if (existingPanel) {
+        existingPanel.remove();
+    }
+
+    // Create position config panel (similar to hotkey config)
+    const positionConfig = document.createElement('div');
+    positionConfig.className = 'position-config';
+    
+    const title = document.createElement('div');
+    title.className = 'position-title';
+    title.textContent = 'Screen Position';
+    
+    const instructions = document.createElement('div');
+    instructions.className = 'position-instructions';
+    instructions.textContent = 'Select where the app should appear:';
+    
+    // Create dropdown instead of grid
+    const dropdown = document.createElement('select');
+    dropdown.className = 'position-dropdown';
+    
+    // Position options for the dropdown
+    const positions = [
+      { code: 'LT', label: 'Top Left' },
+      { code: 'MT', label: 'Top Center' },
+      { code: 'RT', label: 'Top Right' },
+      { code: 'LM', label: 'Middle Left' },
+      { code: 'RM', label: 'Middle Right' },
+      { code: 'LB', label: 'Bottom Left' },
+      { code: 'MB', label: 'Bottom Center' },
+      { code: 'RB', label: 'Bottom Right' }
+    ];
+    
+    // Default to middle bottom if we can't get the setting
+    let selectedPosition = 'MB';
+    
+    // Add options to dropdown
+    positions.forEach(pos => {
+      const option = document.createElement('option');
+      option.value = pos.code;
+      option.textContent = pos.label;
+      dropdown.appendChild(option);
+    });
+    
+    // Get current position from settings
+    window.api.getCurrentPosition().then(position => {
+      selectedPosition = position;
+      dropdown.value = selectedPosition;
+    });
+    
+    // Listen for changes
+    dropdown.addEventListener('change', function() {
+      selectedPosition = this.value;
+    });
+    
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.className = 'position-buttons';
+    
+    const saveButton = document.createElement('button');
+    saveButton.className = 'position-save';
+    saveButton.textContent = 'Save';
+    
+    const cancelButton = document.createElement('button');
+    cancelButton.className = 'position-cancel';
+    cancelButton.textContent = 'Cancel';
+    
+    buttonsContainer.appendChild(saveButton);
+    buttonsContainer.appendChild(cancelButton);
+    
+    positionConfig.appendChild(title);
+    positionConfig.appendChild(instructions);
+    positionConfig.appendChild(dropdown);
+    positionConfig.appendChild(buttonsContainer);
+    
+    document.body.appendChild(positionConfig);
+    
+    // Position the panel - at same position as the context menu would appear
+    const bubbleRect = bubble.getBoundingClientRect();
+    const windowHeight = window.innerHeight;
+    
+    // Same positioning as used for context menu
+    positionConfig.style.position = 'absolute';
+    positionConfig.style.bottom = `${windowHeight - bubbleRect.top + 10}px`;
+    positionConfig.style.left = '50%';
+    positionConfig.style.transform = 'translateX(-50%)';
+    
+    // Handle button clicks
+    saveButton.addEventListener('click', () => {
+      saveButton.textContent = 'Saving...';
+      saveButton.disabled = true;
+      
+      // Save position to settings
+      window.api.setPosition(selectedPosition).then(success => {
+        if (success) {
+          // Show saved confirmation
+          dropdown.style.display = 'none';
+          
+          const savedMessage = document.createElement('div');
+          savedMessage.className = 'position-saved';
+          savedMessage.textContent = 'Position saved!';
+          savedMessage.style.textAlign = 'center';
+          savedMessage.style.color = '#90ff91';
+          savedMessage.style.marginBottom = '14px';
+          
+          positionConfig.insertBefore(savedMessage, buttonsContainer);
+          
+          // Close after a brief delay
+          setTimeout(() => {
+            closePositionConfig();
+          }, 1000);
+        } else {
+          saveButton.textContent = 'Save';
+          saveButton.disabled = false;
+          console.error('Failed to save position');
+        }
+      });
+    });
+    
+    cancelButton.addEventListener('click', closePositionConfig);
+    
+    // Handle clicks outside the panel
+    document.addEventListener('click', handleOutsideClick);
+    
+    function closePositionConfig() {
+      document.removeEventListener('click', handleOutsideClick);
+      
+      if (positionConfig.parentNode) {
+        positionConfig.remove();
+      }
+    }
+    
+    function handleOutsideClick(e) {
+      if (!positionConfig.contains(e.target) && e.target !== positionConfig) {
+        closePositionConfig();
+      }
+    }
+    
+    // Handle escape key to close
+    document.addEventListener('keydown', function escHandler(e) {
+      if (e.key === 'Escape') {
+        document.removeEventListener('keydown', escHandler);
+        closePositionConfig();
+      }
     });
   }
   
@@ -538,17 +715,35 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Set up event listeners
   
-  // Handle bubble clicks
-  bubble.addEventListener('click', toggleDictation);
+  // Add event listeners for bubble interactions
+  bubble.addEventListener('click', async () => {
+    console.log('Bubble clicked');
+    
+    // If we're already dictating, stop
+    if (isDictating) {
+      await stopDictation();
+    } else {
+      await startDictation();
+    }
+  });
+  
+  // Add right-click event listener for context menu
+  bubble.addEventListener('contextmenu', (event) => {
+    console.log('Bubble right-clicked');
+    event.preventDefault();
+    
+    // If we're dictating, stop first
+    if (isDictating) {
+      // We can't await here, but that's OK - just stop silently
+      stopDictation().catch(console.error);
+    }
+    
+    // Create and show the context menu
+    createContextMenu(event.clientX, event.clientY);
+  });
   
   // Handle clicking on expanded panel
   expandedPanel.addEventListener('click', toggleDictation);
-  
-  // Context menu (right-click) handler
-  document.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    createContextMenu(e.clientX, e.clientY);
-  });
   
   // Listen for toggle event from main process (global hotkey)
   window.api.onToggleDictation(toggleDictation);

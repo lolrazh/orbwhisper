@@ -27,6 +27,10 @@ contextBridge.exposeInMainWorld(
     setHotkey: (hotkeyString) => ipcRenderer.invoke('set-hotkey', hotkeyString),
     getCurrentHotkey: () => ipcRenderer.invoke('get-current-hotkey'),
     
+    // Position configuration
+    setPosition: (positionCode) => ipcRenderer.invoke('set-position', positionCode),
+    getCurrentPosition: () => ipcRenderer.invoke('get-current-position'),
+    
     // Receive toggle-dictation event from main process
     onToggleDictation: (callback) => {
       ipcRenderer.on('toggle-dictation', () => callback());

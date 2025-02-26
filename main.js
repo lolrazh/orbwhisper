@@ -57,10 +57,8 @@ function createWindow() {
   // Load the index.html of the app
   mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
 
-  // Open DevTools in development mode
-  if (process.argv.includes('--dev')) {
-    mainWindow.webContents.openDevTools({ mode: 'detach' });
-  }
+  // Open DevTools for debugging
+  mainWindow.webContents.openDevTools({ mode: 'detach' });
 
   // Emitted when the window is closed
   mainWindow.on('closed', function () {
@@ -236,6 +234,36 @@ ipcMain.handle('get-current-hotkey', async () => {
   // Always get the latest from settings file
   currentHotkey = settings.getSetting('hotkey');
   return currentHotkey;
+});
+
+// Set app position
+ipcMain.handle('set-position', async (event, positionCode) => {
+  try {
+    // Validate position code
+    const validPositions = ['LT', 'MT', 'RT', 'LM', 'RM', 'LB', 'MB', 'RB'];
+    if (!validPositions.includes(positionCode)) {
+      console.error(`Invalid position code: ${positionCode}`);
+      return false;
+    }
+    
+    // Save the position to settings
+    settings.updateSetting('position', positionCode);
+    console.log(`Position updated in settings: ${positionCode}`);
+    
+    // Later we would implement the actual repositioning of the window
+    // For now, we just save the setting
+    
+    return true;
+  } catch (err) {
+    console.error('Error setting position:', err);
+    return false;
+  }
+});
+
+// Get current position
+ipcMain.handle('get-current-position', async () => {
+  const position = settings.getSetting('position') || 'MB';
+  return position;
 });
 
 // Function to register the global hotkey

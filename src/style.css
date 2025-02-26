@@ -62,10 +62,10 @@ body {
   background: linear-gradient(135deg, #5e72eb, #ff9190);
   opacity: 0.9;
   transition: opacity 0.2s ease, transform 0.3s ease, box-shadow 0.3s ease;
-  /* Black drop shadow under the glow */
+  /* Enhanced black drop shadow under the glow */
   box-shadow: 
-    0 8px 16px rgba(0, 0, 0, 0.4),       /* Black drop shadow */
-    0 0 10px rgba(255, 145, 144, 0.15);   /* Glow effect on top */
+    0 8px 16px rgba(0, 0, 0, 0.5),       /* Black drop shadow */
+    0 0 12px rgba(255, 185, 144, 0.25);   /* Enhanced glow effect on top */
 }
 
 /* Bubble states */
@@ -73,8 +73,8 @@ body {
   opacity: 1;
   /* Enhanced black drop shadow under the glow */
   box-shadow: 
-    0 10px 20px rgba(0, 0, 0, 0.4),       /* Black drop shadow */
-    0 0 10px rgba(255, 145, 144, 0.25);   /* Glow effect on top */
+    0 10px 20px rgba(0, 0, 0, 0.5),       /* Enhanced black drop shadow */
+    0 0 15px rgba(255, 185, 144, 0.35);   /* Enhanced glow effect on top */
 }
 
 #bubble.pasting #bubble-inner {
@@ -226,10 +226,10 @@ body {
   border-radius: 8px;
   padding: 10px;
   min-width: 150px;
-  /* Black drop shadow under the glow */
+  /* Enhanced black drop shadow under the glow */
   box-shadow: 
-    0 10px 20px rgba(0, 0, 0, 0.4),      /* Black drop shadow */
-    0 0 10px rgba(255, 145, 144, 0.15);  /* Glow effect on top */
+    0 10px 20px rgba(0, 0, 0, 0.5),      /* Enhanced black drop shadow */
+    0 0 12px rgba(255, 185, 144, 0.25);  /* Enhanced yellowish glow */
   z-index: 1000;
   font-family: 'Inter', sans-serif;
   user-select: none;
@@ -243,14 +243,15 @@ body {
   font-size: 12px;
   font-weight: 400;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, color 0.2s;
   margin: 0;
   border-radius: 4px;
   line-height: 1.2;
 }
 
 .context-menu-item:hover {
-  background: rgba(60, 60, 60, 0.8);
+  background: rgba(255, 185, 144, 0.2);
+  color: #ffb990;
 }
 
 .context-menu-item.dummy-button {
@@ -310,7 +311,9 @@ body {
   padding: 12px;
   background: rgba(20, 20, 20, 1);
   border-radius: 8px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 145, 144, 0.15);
+  box-shadow: 
+    0 10px 20px rgba(0, 0, 0, 0.5),      /* Enhanced black drop shadow */
+    0 0 12px rgba(255, 185, 144, 0.25);  /* Enhanced yellowish glow */
   z-index: 1000;
   font-family: 'Inter', sans-serif;
   color: #fff;
@@ -348,7 +351,7 @@ body {
 
 .hotkey-display.key-pressed {
   background: rgba(60, 60, 60, 0.8);
-  box-shadow: 0 0 5px rgba(255, 145, 144, 0.15);
+  box-shadow: 0 0 5px rgba(255, 185, 144, 0.25);
 }
 
 .hotkey-display.error {
@@ -375,17 +378,19 @@ body {
   background: rgba(40, 40, 40, 0.8);
   color: #ccc;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
   font-size: 12px;
   font-family: 'Inter', sans-serif;
 }
 
 .hotkey-buttons button:hover:not(:disabled) {
-  background: rgba(60, 60, 60, 0.8);
+  background: rgba(255, 185, 144, 0.2);
+  color: #ffb990;
+  box-shadow: 0 0 5px rgba(255, 185, 144, 0.25);
 }
 
 .hotkey-buttons button:active:not(:disabled) {
-  background: rgba(80, 80, 80, 0.8);
+  background: rgba(255, 185, 144, 0.3);
 }
 
 .hotkey-buttons button:disabled {
@@ -394,9 +399,114 @@ body {
 }
 
 .hotkey-save {
-  color: #ff9190 !important;
+  color: #ffb990 !important;
 }
 
 .hotkey-save:hover:not(:disabled) {
-  box-shadow: 0 0 5px rgba(255, 145, 144, 0.15);
+  box-shadow: 0 0 5px rgba(255, 185, 144, 0.25);
+}
+
+/* Screen Position Selector */
+.position-config {
+  position: absolute;
+  width: 200px; /* Match the width of hotkey config */
+  padding: 12px;
+  background: rgba(20, 20, 20, 1);
+  border-radius: 8px;
+  box-shadow: 
+    0 10px 20px rgba(0, 0, 0, 0.5),      /* Enhanced black drop shadow */
+    0 0 12px rgba(255, 185, 144, 0.25);  /* Enhanced yellowish glow */
+  z-index: 1000;
+  font-family: 'Inter', sans-serif;
+  color: #fff;
+  user-select: none;
+  pointer-events: auto;
+}
+
+.position-title {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #ccc;
+}
+
+.position-instructions {
+  font-size: 12px;
+  margin-bottom: 10px;
+  color: #aaa;
+}
+
+.position-dropdown {
+  width: 100%;
+  background: rgba(40, 40, 40, 0.8);
+  border: none;
+  border-radius: 4px;
+  padding: 8px;
+  margin-bottom: 14px;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.position-dropdown:hover {
+  background: rgba(50, 50, 50, 0.8);
+  box-shadow: 0 0 5px rgba(255, 185, 144, 0.25);
+}
+
+.position-dropdown:focus {
+  background: rgba(60, 60, 60, 0.8);
+  box-shadow: 0 0 5px rgba(255, 185, 144, 0.35);
+}
+
+.position-dropdown option {
+  background: rgba(30, 30, 30, 1);
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  padding: 8px;
+}
+
+.position-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.position-buttons button {
+  flex: 1;
+  padding: 6px 0;
+  border: none;
+  border-radius: 4px;
+  background: rgba(40, 40, 40, 0.8);
+  color: #ccc;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+}
+
+.position-buttons button:hover:not(:disabled) {
+  background: rgba(255, 185, 144, 0.2);
+  color: #ffb990;
+  box-shadow: 0 0 5px rgba(255, 185, 144, 0.25);
+}
+
+.position-buttons button:active:not(:disabled) {
+  background: rgba(255, 185, 144, 0.3);
+}
+
+.position-buttons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.position-save {
+  color: #ffb990 !important;
+}
+
+.position-save:hover:not(:disabled) {
+  box-shadow: 0 0 5px rgba(255, 185, 144, 0.25);
 } 
