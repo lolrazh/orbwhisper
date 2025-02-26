@@ -1,7 +1,7 @@
 {
-  "name": "sandy-whisper",
+  "name": "orbwhisper",
   "version": "1.0.0",
-  "description": "A lightweight desktop dictation tool with a floating bubble UI",
+  "description": "A lightweight AI-powered desktop dictation tool",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -31,8 +31,8 @@
     "openai": "^4.85.4"
   },
   "build": {
-    "appId": "com.sandywhisper.app",
-    "productName": "SandyWhisper",
+    "appId": "com.orbwhisper.app",
+    "productName": "OrbWhisper",
     "directories": {
       "output": "dist"
     },

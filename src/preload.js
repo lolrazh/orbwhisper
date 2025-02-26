@@ -23,6 +23,10 @@ contextBridge.exposeInMainWorld(
     // Keyboard simulation
     typeText: (text) => ipcRenderer.invoke('type-text', text),
     
+    // Hotkey configuration
+    setHotkey: (hotkeyString) => ipcRenderer.invoke('set-hotkey', hotkeyString),
+    getCurrentHotkey: () => ipcRenderer.invoke('get-current-hotkey'),
+    
     // Receive toggle-dictation event from main process
     onToggleDictation: (callback) => {
       ipcRenderer.on('toggle-dictation', () => callback());

@@ -6,12 +6,16 @@ require('dotenv').config();
 // Import our modules
 const whisperApi = require('./src/whisper-api');
 const keyboardSim = require('./src/keyboard-sim');
+const settings = require('./src/settings');
 
 // Make clipboard available to keyboard-sim module
 keyboardSim.setClipboard(clipboard);
 
 // Keep a global reference of the window object to prevent garbage collection
 let mainWindow;
+
+// Store the current global hotkey - will be loaded from settings
+let currentHotkey;
 
 function createWindow() {
   // Get primary display dimensions
@@ -78,18 +82,12 @@ app.whenReady().then(() => {
   // Initialize Whisper API with API key from environment variable
   whisperApi.initOpenAI(process.env.OPENAI_API_KEY);
 
+  // Load the hotkey from settings
+  currentHotkey = settings.getSetting('hotkey');
+  console.log(`Loaded hotkey from settings: ${currentHotkey}`);
+
   // Register a global shortcut for dictation toggle
-  globalShortcut.register('CommandOrControl+Shift+H', () => {
-    if (mainWindow) {
-      // Send toggle message to the renderer process
-      mainWindow.webContents.send('toggle-dictation');
-      
-      // Show window if it's hidden
-      if (!mainWindow.isVisible()) {
-        mainWindow.show();
-      }
-    }
-  });
+  registerGlobalHotkey(currentHotkey);
   
   // Add a shortcut to close/hide the app
   globalShortcut.register('CommandOrControl+Shift+Escape', () => {
@@ -186,4 +184,101 @@ ipcMain.on('hide-app', () => {
   if (mainWindow && mainWindow.isVisible()) {
     mainWindow.hide();
   }
-}); 
+});
+
+//=====================================================================
+// Settings & Configuration IPC Handlers
+//=====================================================================
+
+// Set global hotkey
+ipcMain.handle('set-hotkey', async (event, hotkeyString) => {
+  try {
+    const success = registerGlobalHotkey(hotkeyString);
+    if (success) {
+      // Save the new hotkey to settings
+      settings.updateSetting('hotkey', hotkeyString);
+    }
+    return success;
+  } catch (err) {
+    console.error('Error setting hotkey:', err);
+    return false;
+  }
+});
+
+// Get current global hotkey
+ipcMain.handle('get-current-hotkey', async () => {
+  return currentHotkey;
+});
+
+// Function to register the global hotkey
+function registerGlobalHotkey(hotkeyString) {
+  // Validate input
+  if (!hotkeyString || typeof hotkeyString !== 'string') {
+    console.error('Invalid hotkey string:', hotkeyString);
+    return false;
+  }
+  
+  // First unregister any existing hotkey
+  try {
+    if (currentHotkey) {
+      globalShortcut.unregister(currentHotkey);
+    }
+  } catch (err) {
+    console.error('Error unregistering hotkey:', err);
+    // Continue anyway - we'll try to register the new one
+  }
+  
+  // Now register the new hotkey
+  try {
+    const success = globalShortcut.register(hotkeyString, () => {
+      if (mainWindow) {
+        // Send toggle message to the renderer process
+        mainWindow.webContents.send('toggle-dictation');
+        
+        // Show window if it's hidden
+        if (!mainWindow.isVisible()) {
+          mainWindow.show();
+        }
+      }
+    });
+    
+    if (success) {
+      // Update current hotkey only if registration was successful
+      currentHotkey = hotkeyString;
+      console.log(`Successfully registered hotkey: ${hotkeyString}`);
+      return true;
+    } else {
+      console.error(`Failed to register hotkey: ${hotkeyString}`);
+      
+      // If we failed to register a new hotkey, and we had a previous one,
+      // try to restore the previous one (only once, no recursion)
+      if (currentHotkey && currentHotkey !== hotkeyString) {
+        try {
+          const restored = globalShortcut.register(currentHotkey, () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('toggle-dictation');
+              if (!mainWindow.isVisible()) {
+                mainWindow.show();
+              }
+            }
+          });
+          
+          if (restored) {
+            console.log(`Restored previous hotkey: ${currentHotkey}`);
+          } else {
+            console.error(`Failed to restore previous hotkey: ${currentHotkey}`);
+            currentHotkey = null; // Clear since we couldn't restore it
+          }
+        } catch (e) {
+          console.error('Error restoring previous hotkey:', e);
+          currentHotkey = null; // Clear since we couldn't restore it
+        }
+      }
+      
+      return false;
+    }
+  } catch (err) {
+    console.error('Error registering hotkey:', err);
+    return false;
+  }
+} 

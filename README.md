@@ -1,4 +1,4 @@
-# SandyWhisper
+# OrbWhisper
 
 A lightweight desktop dictation tool with a floating bubble UI, powered by OpenAI's Whisper API.
 

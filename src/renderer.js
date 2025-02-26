@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const debugPanel = document.getElementById('debug-panel');
   const transcribedTextElement = document.getElementById('transcribed-text');
   
+  // Ensure status text is properly set at startup
+  statusText.textContent = 'Ready to dictate';
+  
   // Check if we're in development mode
   const isDev = window.location.href.includes('dev');
   
@@ -19,6 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Track dictation state
   let isDictating = false;
   let isPasting = false;
+  
+  // Track hotkey configuration
+  let currentKeyCombo = '';
   
   // WebRTC Audio Recording variables
   let mediaRecorder = null;
@@ -40,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add menu items
     const menuItems = [
       { label: 'Hide App', action: hideApp, isDummy: false },
-      { label: 'Hotkey', action: dummyAction, isDummy: true },
+      { label: 'Hotkey', action: showHotkeyConfig, isDummy: false },
       { type: 'separator' },
       { label: 'Close App', action: closeApp }
     ];
@@ -110,11 +116,193 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
-  // Dummy action for non-functional buttons
-  function dummyAction() {
-    if (isDev) {
-      console.log('This button is not yet implemented');
+  // Show hotkey configuration UI
+  function showHotkeyConfig() {
+    // Remove existing hotkey config panel if it exists
+    const existingPanel = document.querySelector('.hotkey-config');
+    if (existingPanel) {
+        existingPanel.remove();
     }
+
+    // Create hotkey config panel
+    const hotkeyConfig = document.createElement('div');
+    hotkeyConfig.className = 'hotkey-config';
+    
+    const title = document.createElement('div');
+    title.className = 'hotkey-title';
+    title.textContent = 'Configure Hotkey';
+    
+    const instructions = document.createElement('div');
+    instructions.className = 'hotkey-instructions';
+    instructions.textContent = 'Press a key combination:';
+    
+    const display = document.createElement('div');
+    display.className = 'hotkey-display';
+    
+    // Function to truncate long hotkey strings
+    const formatHotkeyDisplay = (hotkeyStr) => {
+        if (!hotkeyStr) return 'None';
+        // If longer than 20 characters, truncate
+        return hotkeyStr.length > 20 
+            ? hotkeyStr.substring(0, 18) + '...' 
+            : hotkeyStr;
+    };
+    
+    // Get current hotkey from main process
+    window.api.getCurrentHotkey().then(currentHotkey => {
+        display.textContent = formatHotkeyDisplay(currentHotkey);
+        // Add title attribute for tooltip on hover
+        display.title = currentHotkey || 'None';
+        currentKeyCombo = currentHotkey;
+    });
+    
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.className = 'hotkey-buttons';
+    
+    const saveButton = document.createElement('button');
+    saveButton.className = 'hotkey-save';
+    saveButton.textContent = 'Save';
+    saveButton.disabled = true;
+    
+    const cancelButton = document.createElement('button');
+    cancelButton.className = 'hotkey-cancel';
+    cancelButton.textContent = 'Cancel';
+    
+    buttonsContainer.appendChild(saveButton);
+    buttonsContainer.appendChild(cancelButton);
+    
+    hotkeyConfig.appendChild(title);
+    hotkeyConfig.appendChild(instructions);
+    hotkeyConfig.appendChild(display);
+    hotkeyConfig.appendChild(buttonsContainer);
+    
+    document.body.appendChild(hotkeyConfig);
+    
+    // Position the panel - center it in the window for simplicity
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const panelWidth = 200; // Slightly wider than before
+    const panelHeight = 150;
+    
+    const left = (windowWidth - panelWidth) / 2;
+    const top = (windowHeight - panelHeight) / 2;
+    
+    hotkeyConfig.style.left = `${left}px`;
+    hotkeyConfig.style.top = `${top}px`;
+    
+    // Track key combinations
+    let keysPressed = new Set();
+    let keyCombo = '';
+    
+    // Key handlers
+    function handleKeyDown(e) {
+        e.preventDefault();
+        
+        // Ignore escape by itself (used to close the panel)
+        if (e.key === 'Escape' && keysPressed.size === 0) {
+            return;
+        }
+        
+        // Add key to tracked keys
+        keysPressed.add(e.key);
+        
+        // Convert to Electron accelerator format
+        let combo = [];
+        
+        if (keysPressed.has('Control')) combo.push('CommandOrControl');
+        if (keysPressed.has('Alt')) combo.push('Alt');
+        if (keysPressed.has('Shift')) combo.push('Shift');
+        
+        // Add non-modifier keys
+        const nonModifiers = Array.from(keysPressed).filter(key => 
+            !['Control', 'Alt', 'Shift', 'Meta'].includes(key)
+        );
+        
+        // Only add one non-modifier key (the last one pressed)
+        if (nonModifiers.length > 0) {
+            const lastKey = nonModifiers[nonModifiers.length - 1];
+            combo.push(lastKey);
+        }
+        
+        keyCombo = combo.join('+');
+        
+        // Update display
+        if (nonModifiers.length > 0) {
+            display.textContent = formatHotkeyDisplay(keyCombo);
+            display.title = keyCombo; // Add title attribute for tooltip
+            display.classList.add('key-pressed');
+            saveButton.disabled = false;
+        } else {
+            display.textContent = 'Press a key...';
+            display.title = ''; // Clear title tooltip
+            display.classList.remove('key-pressed');
+            saveButton.disabled = true;
+        }
+    }
+    
+    function handleKeyUp(e) {
+        keysPressed.delete(e.key);
+        
+        if (keysPressed.size === 0) {
+            display.classList.remove('key-pressed');
+        }
+    }
+    
+    // Slight delay for UI to render before adding event listeners
+    setTimeout(() => {
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keyup', handleKeyUp);
+        
+        // Handle button clicks
+        saveButton.addEventListener('click', () => {
+            if (keyCombo) {
+                window.api.setHotkey(keyCombo).then(success => {
+                    if (success) {
+                        closeHotkeyConfig();
+                    } else {
+                        display.textContent = 'Invalid hotkey';
+                        display.classList.add('error');
+                        setTimeout(() => {
+                            display.classList.remove('error');
+                            display.textContent = formatHotkeyDisplay(currentKeyCombo);
+                        }, 2000);
+                    }
+                });
+            }
+        });
+        
+        cancelButton.addEventListener('click', closeHotkeyConfig);
+        
+        // Handle clicking outside to close - with delay to prevent immediate closing
+        setTimeout(() => {
+            document.addEventListener('click', handleOutsideClick);
+        }, 300);
+    }, 100);
+    
+    function closeHotkeyConfig() {
+        document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener('keyup', handleKeyUp);
+        document.removeEventListener('click', handleOutsideClick);
+        
+        if (hotkeyConfig && hotkeyConfig.parentNode) {
+            hotkeyConfig.remove();
+        }
+    }
+    
+    function handleOutsideClick(e) {
+        // Only process outside clicks after a short delay
+        if (hotkeyConfig && !hotkeyConfig.contains(e.target) && e.target !== hotkeyConfig) {
+            closeHotkeyConfig();
+        }
+    }
+    
+    // Handle escape key to close
+    document.addEventListener('keydown', function escHandler(e) {
+        if (e.key === 'Escape') {
+            document.removeEventListener('keydown', escHandler);
+            closeHotkeyConfig();
+        }
+    });
   }
   
   function hideApp() {
@@ -229,6 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function resetStatusTextAfterDelay() {
     setTimeout(() => {
       if (!isDictating && !isPasting) {
+        // Always reset to "Ready to dictate" to avoid incorrect text
         statusText.textContent = 'Ready to dictate';
       }
     }, 3000);
@@ -237,6 +426,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize WebRTC recording on startup
   setupAudioRecording().catch(error => {
     console.error('Error setting up audio recording:', error);
+    // Even if mic setup fails, ensure the status message is correct
+    statusText.textContent = 'Ready to dictate';
   });
   
   // Function to toggle dictation mode

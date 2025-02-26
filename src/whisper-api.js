@@ -154,7 +154,7 @@ async function transcribeFallbackAudio() {
     // List of possible phrases for testing
     const dummyPhrases = [
       "This is a test of the dictation system in fallback mode.",
-      "Hello world, I'm using SandyWhisper for dictation.",
+      "Hello world, I'm using OrbWhisper for dictation.",
       "The quick brown fox jumps over the lazy dog.",
       "Voice dictation can help increase productivity substantially.",
       "This is a placeholder response while in fallback mode."

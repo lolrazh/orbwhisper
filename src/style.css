@@ -15,6 +15,7 @@ body {
   position: relative;
   width: 200px; /* Reduced width from 270px */
   height: 200px; /* Increased height to ensure context menu fits */
+  pointer-events: none; /* Make entire window click-through by default */
 }
 
 /* App container - holds both bubble and panel */
@@ -30,6 +31,7 @@ body {
   align-items: center; /* Center align horizontally */
   justify-content: flex-end; /* Align to bottom */
   transition: width 0.3s ease-out;
+  pointer-events: none; /* Make entire container click-through by default */
 }
 
 /* Bubble styles */
@@ -46,6 +48,7 @@ body {
   position: relative;
   flex-shrink: 0; /* Prevent bubble from shrinking */
   background: transparent; /* Ensure outer bubble has no background */
+  pointer-events: auto; /* Make ONLY the bubble clickable */
 }
 
 #bubble:hover {
@@ -59,13 +62,19 @@ body {
   background: linear-gradient(135deg, #5e72eb, #ff9190);
   opacity: 0.9;
   transition: opacity 0.2s ease, transform 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: 0 0 8px rgba(255, 145, 144, 0.2), 0 2px 4px rgba(0, 0, 0, 0.2); /* Combined glow and subtle drop shadow */
+  /* Black drop shadow under the glow */
+  box-shadow: 
+    0 8px 16px rgba(0, 0, 0, 0.4),       /* Black drop shadow */
+    0 0 10px rgba(255, 145, 144, 0.15);   /* Glow effect on top */
 }
 
 /* Bubble states */
 #bubble.active #bubble-inner {
   opacity: 1;
-  box-shadow: 0 0 10px rgba(255, 145, 144, 0.25), 0 3px 5px rgba(0, 0, 0, 0.25); /* Enhanced glow with subtle drop shadow */
+  /* Enhanced black drop shadow under the glow */
+  box-shadow: 
+    0 10px 20px rgba(0, 0, 0, 0.4),       /* Black drop shadow */
+    0 0 10px rgba(255, 145, 144, 0.25);   /* Glow effect on top */
 }
 
 #bubble.pasting #bubble-inner {
@@ -78,22 +87,39 @@ body {
   display: none;
 }
 
+/* Also hide status text when collapsed */
+#app-container.collapsed #status-text {
+  display: none;
+}
+
+/* Hide status text completely after dictation */
+#status-text {
+  transition: opacity 0.3s ease;
+}
+
+#app-container:not(.recording) #status-text {
+  opacity: 0;
+}
+
 /* Expanded panel - frequency visualization */
 #expanded-panel {
   height: 36px;
   width: 120px;
-  background: #1a1a1a;
-  border-radius: 16px;
+  background: rgba(20, 20, 20, 1);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0 10px;
   margin-bottom: 0px;
   transition: opacity 0.3s ease, transform 0.3s ease;
-  box-shadow: 0 0 10px rgba(255, 145, 144, 0.15), 0 3px 5px rgba(0, 0, 0, 0.2); /* Added subtle drop shadow */
+  /* Black drop shadow under the glow */
+  box-shadow: 
+    0 10px 20px rgba(0, 0, 0, 0.4),      /* Black drop shadow */
+    0 0 10px rgba(255, 145, 144, 0.15);  /* Glow effect on top */
   overflow: hidden;
   opacity: 1;
-  backdrop-filter: blur(5px);
+  font-family: 'Inter', sans-serif;
   position: absolute;
   bottom: 55px;
   transform: translateY(20px); /* Initial position for animation */
@@ -109,7 +135,7 @@ body {
 #app-container.recording #expanded-panel {
   transform: translateY(0);
   opacity: 1;
-  pointer-events: auto;
+  pointer-events: auto; /* Make panel clickable when visible */
 }
 
 /* Status text */
@@ -119,6 +145,13 @@ body {
   font-weight: 500;
   white-space: nowrap;
   text-align: center;
+}
+
+/* Keep status text hidden by default */
+.hidden-by-default {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 /* Frequency animation bars */
@@ -135,23 +168,38 @@ body {
   height: 12px;
   background: linear-gradient(to top, #5e72eb, #ff9190);
   margin: 0 1.5px;
-  border-radius: 2px;
+  border-radius: 1.5px;
   transform-origin: bottom;
-  box-shadow: 0 0 3px rgba(255, 145, 144, 0.15);
+  box-shadow: 0 0 3px rgba(255, 145, 144, 0.2);
   transition: height 0.1s ease;
 }
 
 /* Animation keyframes */
 @keyframes equalize {
-  0% { height: 5px; opacity: 0.7; }
-  50% { height: 25px; opacity: 1; }
-  100% { height: 5px; opacity: 0.7; }
+  0% { height: 3px; opacity: 0.5; }
+  50% { height: 20px; opacity: 0.9; }
+  100% { height: 3px; opacity: 0.5; }
 }
 
 @keyframes subtle-pulse {
-  0% { transform: scale(1); box-shadow: 0 0 8px rgba(255, 145, 144, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2); }
-  50% { transform: scale(1.1); box-shadow: 0 0 15px rgba(255, 145, 144, 0.5), 0 3px 6px rgba(0, 0, 0, 0.3); }
-  100% { transform: scale(1); box-shadow: 0 0 8px rgba(255, 145, 144, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2); }
+  0% { 
+    transform: scale(1); 
+    box-shadow: 
+      0 8px 16px rgba(0, 0, 0, 0.4),      /* Black drop shadow */
+      0 0 8px rgba(255, 145, 144, 0.15);   /* Glow effect on top */
+  }
+  50% { 
+    transform: scale(1.1); 
+    box-shadow: 
+      0 10px 20px rgba(0, 0, 0, 0.4),     /* Enhanced black drop shadow */
+      0 0 10px rgba(255, 145, 144, 0.2);  /* Enhanced glow effect on top */
+  }
+  100% { 
+    transform: scale(1); 
+    box-shadow: 
+      0 8px 16px rgba(0, 0, 0, 0.4),      /* Black drop shadow */
+      0 0 8px rgba(255, 145, 144, 0.15);   /* Glow effect on top */
+  }
 }
 
 /* Bar animations with different timing */
@@ -174,45 +222,50 @@ body {
   bottom: 70px;
   left: 50%;
   transform: translateX(-50%);
-  background: #1a1a1a;
-  border-radius: 16px;
-  padding: 6px 0;
+  background: rgba(20, 20, 20, 1);
+  border-radius: 8px;
+  padding: 10px;
   min-width: 150px;
-  box-shadow: 0 0 10px rgba(255, 145, 144, 0.15), 0 3px 5px rgba(0, 0, 0, 0.2);
+  /* Black drop shadow under the glow */
+  box-shadow: 
+    0 10px 20px rgba(0, 0, 0, 0.4),      /* Black drop shadow */
+    0 0 10px rgba(255, 145, 144, 0.15);  /* Glow effect on top */
   z-index: 1000;
-  backdrop-filter: blur(5px);
+  font-family: 'Inter', sans-serif;
+  user-select: none;
   overflow: hidden;
+  pointer-events: auto; /* Make menu clickable */
 }
 
 .context-menu-item {
-  padding: 6px 16px;
-  color: white;
+  padding: 6px 10px;
+  color: #ccc;
   font-size: 12px;
   font-weight: 400;
   cursor: pointer;
-  transition: all 0.2s ease;
-  margin: 0 5px;
-  border-radius: 8px;
+  transition: background 0.2s;
+  margin: 0;
+  border-radius: 4px;
   line-height: 1.2;
 }
 
 .context-menu-item:hover {
-  background-color: rgba(255, 145, 144, 0.2);
+  background: rgba(60, 60, 60, 0.8);
 }
 
 .context-menu-item.dummy-button {
-  opacity: 0.7;
-  cursor: default;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .context-menu-item.dummy-button:hover {
-  background-color: rgba(255, 145, 144, 0.1);
+  background: rgba(40, 40, 40, 0.8);
 }
 
 .context-menu-separator {
   height: 1px;
   background-color: rgba(255, 255, 255, 0.1);
-  margin: 3px 10px;
+  margin: 6px 0;
 }
 
 /* Debug panel - visible only in development mode */
@@ -223,14 +276,19 @@ body {
   width: 250px;
   max-height: 200px;
   overflow-y: auto;
-  background: #1a1a1a;
-  border-radius: 16px;
+  background: rgba(20, 20, 20, 1);
+  border-radius: 8px;
   padding: 10px;
-  color: white;
+  color: #ccc;
   font-size: 12px;
+  font-family: 'Inter', sans-serif;
   transition: opacity 0.3s ease;
-  box-shadow: 0 0 10px rgba(255, 145, 144, 0.15), 0 3px 5px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(5px);
+  /* Black drop shadow under the glow */
+  box-shadow: 
+    0 10px 20px rgba(0, 0, 0, 0.4),      /* Black drop shadow */
+    0 0 10px rgba(255, 145, 144, 0.15);  /* Glow effect on top */
+  user-select: none;
+  pointer-events: auto; /* Make debug panel clickable */
 }
 
 #debug-panel.hidden {
@@ -240,4 +298,104 @@ body {
 #transcribed-text {
   white-space: pre-wrap;
   word-break: break-word;
+  color: #aaa;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+/* Hotkey Configuration Panel */
+.hotkey-config {
+  position: absolute;
+  width: 200px;
+  padding: 15px;
+  background-color: #222;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  font-family: 'Arial', sans-serif;
+  color: #fff;
+  border: 1px solid #444;
+  user-select: none;
+}
+
+.hotkey-title {
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 10px;
+  text-align: center;
+  color: #eee;
+}
+
+.hotkey-instructions {
+  font-size: 12px;
+  margin-bottom: 10px;
+  color: #aaa;
+  text-align: center;
+}
+
+.hotkey-display {
+  background-color: #333;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 15px;
+  text-align: center;
+  min-height: 20px;
+  font-family: monospace;
+  font-size: 13px;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hotkey-display.key-pressed {
+  background-color: #3a3a3a;
+  border-color: #777;
+}
+
+.hotkey-display.error {
+  background-color: #522;
+  border-color: #933;
+  color: #f88;
+}
+
+.hotkey-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hotkey-buttons button {
+  flex: 1;
+  padding: 6px 0;
+  border: none;
+  border-radius: 4px;
+  background-color: #444;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 12px;
+}
+
+.hotkey-buttons button:hover {
+  background-color: #555;
+}
+
+.hotkey-buttons button:active {
+  background-color: #666;
+}
+
+.hotkey-buttons button:disabled {
+  background-color: #333;
+  color: #777;
+  cursor: not-allowed;
+}
+
+.hotkey-save {
+  background-color: #285;
+}
+
+.hotkey-save:hover:not(:disabled) {
+  background-color: #3a6;
 } 
