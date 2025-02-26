@@ -79,6 +79,16 @@ body {
   display: none;
 }
 
+/* Also hide status text when collapsed (after dictation finishes) */
+#app-container.collapsed #status-text {
+  display: none;
+}
+
+/* Only show status text when there's an error or when specifically needed */
+#app-container.show-status #status-text {
+  display: block;
+}
+
 /* Expanded panel - now positioned closer to the bubble */
 #expanded-panel {
   height: 36px; /* Reduced height further */

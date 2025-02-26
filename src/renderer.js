@@ -20,6 +20,21 @@ document.addEventListener('DOMContentLoaded', () => {
   let isDictating = false;
   let isPasting = false;
   
+  // Remove initial "Ready to dictate" text
+  statusText.textContent = '';
+  
+  // Function to temporarily show status text
+  function showStatusTemporarily(message, duration = 3000) {
+    if (message) {
+      statusText.textContent = message;
+      appContainer.classList.add('show-status');
+      
+      setTimeout(() => {
+        appContainer.classList.remove('show-status');
+      }, duration);
+    }
+  }
+  
   // WebRTC Audio Recording variables
   let mediaRecorder = null;
   let mediaStream = null;
@@ -248,6 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isDictating) {
       // Expand the UI
       appContainer.classList.remove('collapsed');
+      appContainer.classList.remove('show-status');
       appContainer.classList.add('recording'); // Add recording class to hide status text
       bubble.classList.add('active');
       
@@ -259,13 +275,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const webrtcStarted = startWebRTCRecording();
         
         if (!webrtcStarted) {
-          statusText.textContent = 'Failed to start recording';
+          showStatusTemporarily('Failed to start recording');
           isDictating = false;
           bubble.classList.remove('active');
           appContainer.classList.remove('recording');
         }
       } else {
-        statusText.textContent = 'Failed to start recording';
+        showStatusTemporarily('Failed to start recording');
         isDictating = false;
         bubble.classList.remove('active');
         appContainer.classList.remove('recording');
@@ -276,8 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
       bubble.classList.remove('active');
       bubble.classList.add('pasting');
       appContainer.classList.remove('recording');
-      
-      // Don't show "Processing..." text - removed
+      appContainer.classList.remove('show-status');
       
       // Stop WebRTC recording first
       await stopWebRTCRecording();
@@ -286,9 +301,6 @@ document.addEventListener('DOMContentLoaded', () => {
       window.api.stopRecordingAndTranscribe()
         .then(result => {
           if (result && result.text) {
-            // Show the transcribed text briefly
-            statusText.textContent = `Typing: "${result.text.substring(0, 20)}${result.text.length > 20 ? '...' : ''}"`;
-            
             // For debugging, show the transcribed text
             if (isDev && transcribedTextElement) {
               const timestamp = new Date().toLocaleTimeString();
@@ -303,45 +315,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 isPasting = false;
                 
                 if (typeResult.error) {
-                  statusText.textContent = `Error: ${typeResult.error}`;
+                  showStatusTemporarily(`Error: ${typeResult.error}`);
                 }
               })
               .catch(err => {
                 console.error('Typing error:', err);
-                statusText.textContent = 'Typing failed';
+                showStatusTemporarily('Typing failed');
                 bubble.classList.remove('pasting');
                 isPasting = false;
               });
-            
-            // Reset status after a short delay
-            setTimeout(() => {
-              if (!isDictating && !isPasting) {
-                statusText.textContent = 'Ready to dictate';
-              }
-            }, 3000);
           } else if (result.error) {
-            statusText.textContent = `Error: ${result.error}`;
+            showStatusTemporarily(`Error: ${result.error}`);
             bubble.classList.remove('pasting');
             isPasting = false;
-            
-            setTimeout(() => {
-              if (!isDictating && !isPasting) {
-                statusText.textContent = 'Ready to dictate';
-              }
-            }, 3000);
           }
         })
         .catch(err => {
           console.error('Transcription error:', err);
-          statusText.textContent = 'Transcription failed';
+          showStatusTemporarily('Transcription failed');
           bubble.classList.remove('pasting');
           isPasting = false;
-          
-          setTimeout(() => {
-            if (!isDictating && !isPasting) {
-              statusText.textContent = 'Ready to dictate';
-            }
-          }, 3000);
         });
       
       // Collapse the UI
