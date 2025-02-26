@@ -307,63 +307,64 @@ body {
 .hotkey-config {
   position: absolute;
   width: 200px;
-  padding: 15px;
-  background-color: #222;
-  border-radius: 12px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  padding: 12px;
+  background: rgba(20, 20, 20, 1);
+  border-radius: 8px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 145, 144, 0.15);
   z-index: 1000;
-  font-family: 'Arial', sans-serif;
+  font-family: 'Inter', sans-serif;
   color: #fff;
-  border: 1px solid #444;
   user-select: none;
+  pointer-events: auto;
 }
 
 .hotkey-title {
-  font-weight: bold;
-  font-size: 14px;
-  margin-bottom: 10px;
-  text-align: center;
-  color: #eee;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #ccc;
 }
 
 .hotkey-instructions {
   font-size: 12px;
   margin-bottom: 10px;
   color: #aaa;
-  text-align: center;
 }
 
 .hotkey-display {
-  background-color: #333;
-  border: 1px solid #555;
-  border-radius: 6px;
+  background: rgba(40, 40, 40, 0.8);
+  border-radius: 4px;
   padding: 8px;
-  margin-bottom: 15px;
+  margin-bottom: 14px;
   text-align: center;
   min-height: 20px;
   font-family: monospace;
   font-size: 13px;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .hotkey-display.key-pressed {
-  background-color: #3a3a3a;
-  border-color: #777;
+  background: rgba(60, 60, 60, 0.8);
+  box-shadow: 0 0 5px rgba(255, 145, 144, 0.15);
 }
 
 .hotkey-display.error {
-  background-color: #522;
-  border-color: #933;
-  color: #f88;
+  background: rgba(80, 20, 20, 0.8);
+  color: #ff9190;
+}
+
+.hotkey-display.success {
+  background: rgba(20, 80, 20, 0.8);
+  color: #90ff91;
 }
 
 .hotkey-buttons {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
 .hotkey-buttons button {
@@ -371,31 +372,31 @@ body {
   padding: 6px 0;
   border: none;
   border-radius: 4px;
-  background-color: #444;
-  color: #fff;
+  background: rgba(40, 40, 40, 0.8);
+  color: #ccc;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background 0.2s;
   font-size: 12px;
+  font-family: 'Inter', sans-serif;
 }
 
-.hotkey-buttons button:hover {
-  background-color: #555;
+.hotkey-buttons button:hover:not(:disabled) {
+  background: rgba(60, 60, 60, 0.8);
 }
 
-.hotkey-buttons button:active {
-  background-color: #666;
+.hotkey-buttons button:active:not(:disabled) {
+  background: rgba(80, 80, 80, 0.8);
 }
 
 .hotkey-buttons button:disabled {
-  background-color: #333;
-  color: #777;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .hotkey-save {
-  background-color: #285;
+  color: #ff9190 !important;
 }
 
 .hotkey-save:hover:not(:disabled) {
-  background-color: #3a6;
+  box-shadow: 0 0 5px rgba(255, 145, 144, 0.15);
 } 

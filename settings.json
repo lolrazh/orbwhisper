@@ -1,9 +1,9 @@
 {
-  "hotkey": "Control+Shift+H",
+  "hotkey": "CommandOrControl+h",
   "appearance": {
     "theme": "dark"
   },
   "audio": {
     "sensitivity": "medium"
   }
-} 
+}

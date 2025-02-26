@@ -256,10 +256,23 @@ document.addEventListener('DOMContentLoaded', () => {
         // Handle button clicks
         saveButton.addEventListener('click', () => {
             if (keyCombo) {
+                saveButton.textContent = 'Saving...';
+                saveButton.disabled = true;
+                
                 window.api.setHotkey(keyCombo).then(success => {
                     if (success) {
-                        closeHotkeyConfig();
+                        // Show saved confirmation
+                        display.textContent = 'Hotkey saved!';
+                        display.classList.add('success');
+                        saveButton.textContent = 'Save';
+                        
+                        // Close after a brief delay
+                        setTimeout(() => {
+                            closeHotkeyConfig();
+                        }, 1000);
                     } else {
+                        saveButton.textContent = 'Save';
+                        saveButton.disabled = false;
                         display.textContent = 'Invalid hotkey';
                         display.classList.add('error');
                         setTimeout(() => {

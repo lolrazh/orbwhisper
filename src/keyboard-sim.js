@@ -85,6 +85,7 @@ async function typeText(text) {
     
     // Restore original clipboard content
     clipboard.writeText(originalClipboard);
+    console.log('Original clipboard content restored');
     
     return { success: true, message: "Text pasted via clipboard", text: text };
   } catch (err) {

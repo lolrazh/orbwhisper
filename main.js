@@ -1,5 +1,6 @@
 const { app, BrowserWindow, globalShortcut, ipcMain, screen, clipboard } = require('electron');
 const path = require('path');
+const fs = require('fs');
 // Load environment variables from .env file
 require('dotenv').config();
 
@@ -7,6 +8,9 @@ require('dotenv').config();
 const whisperApi = require('./src/whisper-api');
 const keyboardSim = require('./src/keyboard-sim');
 const settings = require('./src/settings');
+
+// Get path to settings file
+const SETTINGS_FILE_PATH = path.join(__dirname, 'settings.json');
 
 // Make clipboard available to keyboard-sim module
 keyboardSim.setClipboard(clipboard);
@@ -93,6 +97,27 @@ app.whenReady().then(() => {
   globalShortcut.register('CommandOrControl+Shift+Escape', () => {
     if (mainWindow && mainWindow.isVisible()) {
       mainWindow.hide();
+    }
+  });
+  
+  // Watch for changes to settings.json
+  fs.watch(SETTINGS_FILE_PATH, (eventType) => {
+    if (eventType === 'change') {
+      // Small delay to ensure file is fully written
+      setTimeout(() => {
+        try {
+          // Read the new hotkey from settings
+          const newHotkey = settings.getSetting('hotkey');
+          
+          // Only update if the hotkey has changed
+          if (newHotkey && newHotkey !== currentHotkey) {
+            console.log(`Settings file changed. Updating hotkey from ${currentHotkey} to ${newHotkey}`);
+            registerGlobalHotkey(newHotkey);
+          }
+        } catch (err) {
+          console.error('Error processing settings file change:', err);
+        }
+      }, 100);
     }
   });
 
@@ -197,6 +222,7 @@ ipcMain.handle('set-hotkey', async (event, hotkeyString) => {
     if (success) {
       // Save the new hotkey to settings
       settings.updateSetting('hotkey', hotkeyString);
+      console.log(`Hotkey updated in settings: ${hotkeyString}`);
     }
     return success;
   } catch (err) {
@@ -207,6 +233,8 @@ ipcMain.handle('set-hotkey', async (event, hotkeyString) => {
 
 // Get current global hotkey
 ipcMain.handle('get-current-hotkey', async () => {
+  // Always get the latest from settings file
+  currentHotkey = settings.getSetting('hotkey');
   return currentHotkey;
 });
 
