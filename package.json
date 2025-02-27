@@ -30,6 +30,7 @@
     "adapter": "^1.0.0-beta.10",
     "axios": "^1.7.9",
     "dotenv": "^16.3.1",
+    "form-data": "^4.0.2",
     "openai": "^4.85.4"
   },
   "build": {
@@ -54,7 +55,11 @@
       {
         "from": "node_modules/@ffmpeg/core",
         "to": "resources/app.asar.unpacked/node_modules/@ffmpeg/core",
-        "filter": ["*.wasm", "*.js", "*.json"]
+        "filter": [
+          "*.wasm",
+          "*.js",
+          "*.json"
+        ]
       }
     ],
     "asarUnpack": [

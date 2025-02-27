@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const ffmpegUtils = require('./ffmpeg-utils');
+const FormData = require('form-data');
 
 // Initialize variables
 let openaiGroq;         // For Groq endpoint with OpenAI-compatible API
@@ -15,6 +16,9 @@ let audioFilePath = '';
 let audioChunks = []; 
 let useFallbackMode = false; // Flag for fallback mode
 let ffmpegPreloaded = false; // Track if FFmpeg is preloaded
+let recordingStartTime = 0;  // Track when recording started
+const MIN_RECORDING_MS = 1000; // Minimum recording duration (1 second)
+const MIN_CHUNKS = 10;         // Minimum number of audio chunks
 
 // Initialize the API client with API key
 function initAPI(openaiApiKey, groqApiKey) {
@@ -74,13 +78,16 @@ function startRecording() {
       const tmpDir = os.tmpdir();
       audioFilePath = path.join(tmpDir, `whisper_recording_${Date.now()}.flac`); // Changed to .flac
       
-      // Mark as recording and resolve
+      // Mark as recording and record start time
       isRecording = true;
+      recordingStartTime = Date.now();
+      
       resolve(true);
     } catch (err) {
       console.error('Error in startRecording:', err);
       useFallbackMode = true;
       isRecording = true; // Still mark as recording for the fallback mode
+      recordingStartTime = Date.now();
       resolve(true);
     }
   });
@@ -111,13 +118,20 @@ async function addAudioChunk(chunk) {
 async function finalizeRecording() {
   if (!isRecording || audioChunks.length === 0) return false;
   
-  console.log(`Finalizing recording with ${audioChunks.length} chunks...`);
+  // Check if we've recorded for the minimum duration
+  const recordingDuration = Date.now() - recordingStartTime;
+  console.log(`Finalizing recording with ${audioChunks.length} chunks (duration: ${recordingDuration}ms)...`);
   
-  // We don't need to write to file anymore unless we're in fallback mode
-  // The actual transcription will use the in-memory audio data
+  // Ensure we have enough audio data
+  if (recordingDuration < MIN_RECORDING_MS || audioChunks.length < MIN_CHUNKS) {
+    console.warn(`Recording too short (${recordingDuration}ms, ${audioChunks.length} chunks). Adding artificial delay.`);
+    // Add a small delay to ensure we capture enough audio
+    await new Promise(resolve => setTimeout(resolve, MIN_RECORDING_MS - recordingDuration));
+  }
   
   // Reset recording state but keep chunks for transcription
   isRecording = false;
+  recordingStartTime = 0;
   
   return true;
 }
@@ -149,54 +163,84 @@ async function transcribeAudio() {
     return { error: "No audio data available" };
   }
   
+  // Check if we have enough audio data to transcribe
+  if (audioChunks.length < 5) {
+    console.warn(`Very few audio chunks (${audioChunks.length}). Transcription may be incomplete.`);
+  }
+  
+  const startTime = Date.now();
+  let tempFilePath = null;
+  
   try {
-    console.log(`Transcribing audio data from memory (${audioChunks.length} chunks)`);
+    console.log(`Transcribing audio from ${audioChunks.length} chunks...`);
     
     // Combine all chunks into a single buffer
     const audioBuffer = Buffer.concat(audioChunks);
     
-    // Make sure FFmpeg is loaded before conversion
+    // Make sure FFmpeg is loaded
     if (!ffmpegPreloaded) {
-      console.log('Loading FFmpeg on demand...');
       await ffmpegUtils.ensureFFmpegLoaded();
       ffmpegPreloaded = true;
     }
     
-    // Use FFmpeg to convert to optimized FLAC format
-    const { buffer: flacBuffer, path: flacPath } = await ffmpegUtils.convertToOptimizedFlac(audioBuffer);
+    // Single-step conversion to optimized FLAC
+    const conversionStartTime = Date.now();
+    const flacBuffer = await ffmpegUtils.convertToOptimizedFlac(audioBuffer);
+    const conversionTime = Date.now() - conversionStartTime;
     
-    // Set the audio file path for cleanup later
-    audioFilePath = flacPath;
+    // We need to write to temp file due to API limitations
+    tempFilePath = path.join(os.tmpdir(), `groq_audio_${Date.now()}.flac`);
+    fs.writeFileSync(tempFilePath, flacBuffer);
     
-    // Create a readable stream for the FLAC file
-    const audioFile = fs.createReadStream(flacPath);
-    
-    // Call Groq API with optimized FLAC audio
+    // Send to Groq API
+    const apiStartTime = Date.now();
     const transcription = await openaiGroq.audio.transcriptions.create({
-      file: audioFile,
-      model: "distil-whisper-large-v3-en", // Distil model for English only
+      file: fs.createReadStream(tempFilePath),
+      model: "distil-whisper-large-v3-en", 
       response_format: "json",
       temperature: 0,
-      language: "en" // Explicitly specify English language for better accuracy
+      language: "en"
     });
+    const apiTime = Date.now() - apiStartTime;
     
-    console.log('Transcription completed');
+    const totalTime = Date.now() - startTime;
+    console.log(`Processing times - Total: ${totalTime}ms, Conversion: ${conversionTime}ms, API: ${apiTime}ms`);
     
-    // Clean up the temporary audio file
-    try {
-      fs.unlinkSync(audioFilePath);
-      audioFilePath = '';
-    } catch (err) {
-      console.error('Error deleting audio file:', err);
-    }
-    
-    // Clear audio chunks to free memory
+    // Clean up memory
     audioChunks = [];
     
     return transcription;
   } catch (err) {
-    console.error('Transcription error:', err);
-    return { error: err.message || "Transcription failed" };
+    console.error(`Transcription error:`, err);
+    
+    // Try direct submission if conversion failed
+    if (audioChunks.length > 0) {
+      try {
+        // Direct WebM submission as fallback
+        const audioBuffer = Buffer.concat(audioChunks);
+        tempFilePath = path.join(os.tmpdir(), `fallback_${Date.now()}.webm`);
+        fs.writeFileSync(tempFilePath, audioBuffer);
+        
+        const transcription = await openaiGroq.audio.transcriptions.create({
+          file: fs.createReadStream(tempFilePath),
+          model: "distil-whisper-large-v3-en",
+          response_format: "json",
+          temperature: 0,
+          language: "en"
+        });
+        
+        return transcription;
+      } catch {
+        return { error: "Transcription failed" };
+      }
+    }
+    
+    return { error: "Transcription failed" };
+  } finally {
+    // Clean up temp file
+    if (tempFilePath && fs.existsSync(tempFilePath)) {
+      try { fs.unlinkSync(tempFilePath); } catch {}
+    }
   }
 }
 

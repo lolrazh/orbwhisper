@@ -1,16 +1,12 @@
 // ffmpeg-utils.js
-// Module for FFmpeg integration and audio format conversion
+// Streamlined FFmpeg integration for direct WebM to FLAC conversion
 
 const ffmpeg = require('@ffmpeg/ffmpeg');
-const { createFFmpeg, fetchFile } = ffmpeg;
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+const { createFFmpeg } = ffmpeg;
 
-// Create FFmpeg instance with logging enabled for debugging
+// Create FFmpeg instance with minimal logging for maximum performance
 const ffmpegInstance = createFFmpeg({
-  log: true,
-  logger: ({ message }) => console.log(`FFmpeg: ${message}`),
+  log: false,
   corePath: require.resolve('@ffmpeg/core')
 });
 
@@ -36,106 +32,58 @@ async function ensureFFmpegLoaded() {
 }
 
 /**
- * Converts audio buffer to FLAC format for optimal transcription
+ * Direct optimized conversion from WebM audio to FLAC
+ * Streamlined single-step process for maximum efficiency
  * 
- * @param {Buffer} audioBuffer - Raw audio buffer
- * @returns {Promise<{buffer: Buffer, path: string}>} FLAC audio buffer and temp file path
+ * @param {Buffer} audioBuffer - WebM audio buffer from WebRTC
+ * @returns {Promise<Buffer>} - Optimized FLAC buffer for API
  */
 async function convertToOptimizedFlac(audioBuffer) {
   try {
-    // Make sure FFmpeg is loaded
+    // Ensure FFmpeg is loaded
     await ensureFFmpegLoaded();
     
-    // Generate unique input and output file names to avoid conflicts
+    // Generate unique input/output names to avoid conflicts
     const timestamp = Date.now();
-    const inputName = `input_${timestamp}.wav`;
-    const outputName = `output_${timestamp}.flac`;
+    const inputName = `in_${timestamp}.webm`;
+    const outputName = `out_${timestamp}.flac`;
     
-    // Write the buffer to FFmpeg's virtual filesystem
+    // Write buffer to virtual filesystem
     ffmpegInstance.FS('writeFile', inputName, new Uint8Array(audioBuffer));
     
-    // Convert to 16kHz mono FLAC for optimal processing
-    await ffmpegInstance.run(
-      '-i', inputName,                 // Input file
-      '-ar', '16000',                  // 16kHz sample rate (optimal for speech)
-      '-ac', '1',                      // Mono audio
-      '-c:a', 'flac',                  // FLAC codec
-      '-compression_level', '8',       // Maximum compression
-      outputName                       // Output file
-    );
-    
-    // Read the processed file
-    const data = ffmpegInstance.FS('readFile', outputName);
-    
-    // Create a temp file path for compatibility with existing code
-    const tempDir = os.tmpdir();
-    const outputPath = path.join(tempDir, `whisper_recording_${timestamp}.flac`);
-    
-    // Write the FLAC file to disk (only needed if the API requires a file path)
-    fs.writeFileSync(outputPath, Buffer.from(data));
-    
-    // Clean up files in virtual filesystem
-    ffmpegInstance.FS('unlink', inputName);
-    ffmpegInstance.FS('unlink', outputName);
-    
-    console.log(`Audio converted to optimized FLAC format (${data.length} bytes)`);
-    
-    return {
-      buffer: Buffer.from(data),
-      path: outputPath
-    };
-  } catch (error) {
-    console.error('Error converting audio to FLAC:', error);
-    throw error;
-  }
-}
-
-/**
- * Gets information about an audio buffer
- * 
- * @param {Buffer} audioBuffer - Audio buffer to analyze
- * @returns {Promise<Object>} Audio information
- */
-async function getAudioInfo(audioBuffer) {
-  try {
-    // Make sure FFmpeg is loaded
-    await ensureFFmpegLoaded();
-    
-    const inputName = `info_${Date.now()}.wav`;
-    ffmpegInstance.FS('writeFile', inputName, new Uint8Array(audioBuffer));
-    
-    // Run FFprobe functionality through FFmpeg to get info
+    // Single-step direct conversion with optimized parameters
+    // This matches exactly what the Groq documentation recommends
     await ffmpegInstance.run(
       '-i', inputName,
-      '-hide_banner',
-      '-f', 'null',
-      '-'
+      '-ar', '16000',    // 16kHz sample rate
+      '-ac', '1',        // Mono audio
+      '-map', '0:a',     // Audio stream only
+      '-c:a', 'flac',    // FLAC codec
+      outputName
     );
+    
+    // Read processed file
+    const data = ffmpegInstance.FS('readFile', outputName);
     
     // Clean up
     ffmpegInstance.FS('unlink', inputName);
+    ffmpegInstance.FS('unlink', outputName);
     
-    // Basic info extraction (simplified for now)
-    return {
-      format: 'Audio format information not available in this version',
-      duration: 'Duration information not available in this version'
-    };
+    return Buffer.from(data);
   } catch (error) {
-    console.error('Error getting audio info:', error);
-    return { error: error.message };
+    console.error('FFmpeg conversion error:', error);
+    // Return original buffer as fallback
+    return audioBuffer;
   }
 }
 
 // Clean up FFmpeg resources
 function cleanup() {
-  // Nothing specific to clean up with this version of FFmpeg
-  console.log('FFmpeg resources cleaned up');
   return Promise.resolve();
 }
 
 module.exports = {
   ensureFFmpegLoaded,
   convertToOptimizedFlac,
-  getAudioInfo,
   cleanup
 }; 
