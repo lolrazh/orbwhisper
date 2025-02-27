@@ -22,7 +22,7 @@ function initAPI(openaiApiKey, groqApiKey) {
       // Use OpenAI SDK but with Groq base URL
       openaiGroq = new OpenAI({
         apiKey: groqApiKey,
-        baseURL: 'https://api.groq.com/openai/v1',
+        baseURL: 'https://api.groq.com/openai/v1', // Base URL for Groq API
       });
       console.log('Groq client initialized successfully');
       return true;
@@ -156,7 +156,8 @@ async function transcribeAudio() {
       file: audioFile,
       model: "distil-whisper-large-v3-en", // Distil model for English only
       response_format: "json",
-      temperature: 0
+      temperature: 0,
+      language: "en" // Explicitly specify English language for better accuracy
     });
     
     console.log('Transcription completed');
@@ -220,6 +221,16 @@ async function getDictationText() {
   }
 }
 
+// Helper function for testing - allows setting the audio file path directly
+// This is not used in production, only for testing
+function _setAudioFilePathForTesting(filePath) {
+  if (fs.existsSync(filePath)) {
+    audioFilePath = filePath;
+    return true;
+  }
+  return false;
+}
+
 module.exports = {
   initAPI,
   initOpenAI, // Keep for backward compatibility
@@ -228,5 +239,6 @@ module.exports = {
   addAudioChunk,
   finalizeRecording,
   transcribeAudio,
-  getDictationText
+  getDictationText,
+  _setAudioFilePathForTesting // Export for testing purposes only
 }; 
