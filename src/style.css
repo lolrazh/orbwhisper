@@ -30,7 +30,7 @@ body {
   flex-direction: column; /* Stack elements vertically */
   align-items: center; /* Center align horizontally */
   justify-content: flex-end; /* Align to bottom */
-  transition: width 0.3s ease-out;
+  transition: all 0.35s ease-out;
   pointer-events: none; /* Make entire container click-through by default */
 }
 
@@ -43,7 +43,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.3s ease;
+  transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   z-index: 10;
   position: relative;
   flex-shrink: 0; /* Prevent bubble from shrinking */
@@ -61,7 +61,7 @@ body {
   border-radius: 50%;
   background: linear-gradient(135deg, #5e72eb, #ff9190);
   opacity: 0.9;
-  transition: opacity 0.2s ease, transform 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   /* Enhanced black drop shadow under the glow */
   box-shadow: 
     0 8px 16px rgba(0, 0, 0, 0.5),       /* Black drop shadow */
@@ -79,6 +79,7 @@ body {
 
 #bubble.pasting #bubble-inner {
   opacity: 1;
+  background: linear-gradient(135deg, #5e72eb, #ff9190);
   animation: subtle-pulse 1.5s ease-in-out infinite;
 }
 
@@ -94,7 +95,7 @@ body {
 
 /* Hide status text completely after dictation */
 #status-text {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.35s ease;
 }
 
 #app-container:not(.recording) #status-text {
@@ -112,7 +113,7 @@ body {
   justify-content: center;
   padding: 0 10px;
   margin-bottom: 0px;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   /* Black drop shadow under the glow */
   box-shadow: 
     0 10px 20px rgba(0, 0, 0, 0.4),      /* Black drop shadow */
@@ -122,18 +123,19 @@ body {
   font-family: 'Inter', sans-serif;
   position: absolute;
   bottom: 55px;
-  transform: translateY(20px); /* Initial position for animation */
+  transform: translateY(20px) scale(0.95); /* Initial position for animation */
   pointer-events: none; /* Allow clicking through when not needed */
+  will-change: transform, opacity; /* Optimize for animation performance */
 }
 
 /* Panel states */
 #app-container.collapsed #expanded-panel {
-  transform: translateY(20px);
+  transform: translateY(20px) scale(0.95);
   opacity: 0;
 }
 
 #app-container.recording #expanded-panel {
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
   opacity: 1;
   pointer-events: auto; /* Make panel clickable when visible */
 }
@@ -176,29 +178,22 @@ body {
 
 /* Animation keyframes */
 @keyframes equalize {
-  0% { height: 3px; opacity: 0.5; }
-  50% { height: 20px; opacity: 0.9; }
-  100% { height: 3px; opacity: 0.5; }
+  0%, 100% {
+    height: 6px;
+  }
+  50% {
+    height: 20px;
+  }
 }
 
 @keyframes subtle-pulse {
-  0% { 
-    transform: scale(1); 
-    box-shadow: 
-      0 8px 16px rgba(0, 0, 0, 0.4),      /* Black drop shadow */
-      0 0 8px rgba(255, 145, 144, 0.15);   /* Glow effect on top */
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
   }
-  50% { 
-    transform: scale(1.1); 
-    box-shadow: 
-      0 10px 20px rgba(0, 0, 0, 0.4),     /* Enhanced black drop shadow */
-      0 0 10px rgba(255, 145, 144, 0.2);  /* Enhanced glow effect on top */
-  }
-  100% { 
-    transform: scale(1); 
-    box-shadow: 
-      0 8px 16px rgba(0, 0, 0, 0.4),      /* Black drop shadow */
-      0 0 8px rgba(255, 145, 144, 0.15);   /* Glow effect on top */
+  50% {
+    transform: scale(1.05);
+    opacity: 0.95;
   }
 }
 

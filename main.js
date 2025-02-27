@@ -78,8 +78,8 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow();
 
-  // Initialize Whisper API with API key from environment variable
-  whisperApi.initOpenAI(process.env.OPENAI_API_KEY);
+  // Initialize API with Groq API key from environment variable
+  whisperApi.initAPI(null, process.env.GROQ_API_KEY);
 
   // Load the hotkey from settings
   currentHotkey = settings.getSetting('hotkey');

@@ -617,21 +617,37 @@ document.addEventListener('DOMContentLoaded', () => {
   // Function to setup WebRTC audio recording
   async function setupAudioRecording() {
     try {
-      // Request microphone access
+      // Request microphone access with optimized settings for speech recognition
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true
+          autoGainControl: true,
+          sampleRate: 16000, // 16KHz is optimal for speech recognition
+          channelCount: 1,   // Mono audio
+          latency: 0,        // Minimize latency
+          deviceId: 'default' // Use default microphone device
         } 
       });
       
       // Store the stream for later use
       mediaStream = stream;
       
-      // Create recorder with WebM format
-      const options = { mimeType: 'audio/webm' };
-      mediaRecorder = new MediaRecorder(stream, options);
+      // Create recorder with WAV format for better compatibility with speech APIs
+      const options = { 
+        mimeType: 'audio/wav',
+        audioBitsPerSecond: 16000 // 16KHz sample rate
+      };
+      
+      try {
+        mediaRecorder = new MediaRecorder(stream, options);
+      } catch (err) {
+        console.warn('WAV format not supported, falling back to default format:', err);
+        mediaRecorder = new MediaRecorder(stream);
+      }
+      
+      // Log the selected format
+      console.log(`MediaRecorder initialized with: ${mediaRecorder.mimeType}`);
       
       // Event handler for data available event
       mediaRecorder.addEventListener('dataavailable', async (event) => {
@@ -663,8 +679,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     try {
-      // Start recording with 1-second chunks
-      mediaRecorder.start(1000);
+      // Use smaller chunks (500ms) for more frequent processing
+      // This helps capture the end of utterances more reliably
+      mediaRecorder.start(500);
+      console.log('WebRTC recording started with 500ms chunks');
       return true;
     } catch (error) {
       console.error('Error starting WebRTC recording:', error);
@@ -679,7 +697,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     return new Promise((resolve) => {
+      // Explicitly request a final dataavailable event for any buffered audio
+      mediaRecorder.requestData();
+      
       mediaRecorder.addEventListener('stop', async () => {
+        // Add a small delay to ensure all chunks are processed
+        await new Promise(r => setTimeout(r, 500));
+        
         // Finalize the recording in the main process
         try {
           await window.api.finalizeAudioRecording();
@@ -744,13 +768,18 @@ document.addEventListener('DOMContentLoaded', () => {
         appContainer.classList.remove('recording');
       }
     } else {
-      // Add pasting state
-      isPasting = true;
+      // First, immediately update UI to hide frequency bars and show processing state
+      appContainer.classList.remove('recording');
+      appContainer.classList.add('collapsed'); // Immediately collapse to hide frequency bars
+      
       bubble.classList.remove('active');
       bubble.classList.add('pasting');
-      appContainer.classList.remove('recording');
       
-      // Stop WebRTC recording first
+      isPasting = true;
+      statusText.textContent = 'Processing...';
+      
+      // Now that UI is updated, stop recording
+      console.log('Stopping recording and capturing final audio data...');
       await stopWebRTCRecording();
       
       // Then get transcription via main process
@@ -769,7 +798,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Simulate typing the text
             window.api.typeText(result.text)
               .then(typeResult => {
-                // Remove pasting state
+                // Remove pasting state and clean up UI
                 bubble.classList.remove('pasting');
                 isPasting = false;
                 
@@ -799,9 +828,6 @@ document.addEventListener('DOMContentLoaded', () => {
           isPasting = false;
           resetStatusTextAfterDelay();
         });
-      
-      // Collapse the UI
-      appContainer.classList.add('collapsed');
     }
   }
   
