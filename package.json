@@ -22,9 +22,11 @@
   "license": "ISC",
   "devDependencies": {
     "electron": "^28.1.0",
-    "electron-builder": "^24.9.1"
+    "electron-builder": "^24.13.3"
   },
   "dependencies": {
+    "@ffmpeg/core": "0.11.0",
+    "@ffmpeg/ffmpeg": "0.11.0",
     "adapter": "^1.0.0-beta.10",
     "axios": "^1.7.9",
     "dotenv": "^16.3.1",
@@ -45,11 +47,18 @@
     "extraResources": [
       {
         "from": ".env",
-        "to": ".env.example",
-        "filter": [
-          "**/*"
-        ]
+        "to": ".env.example"
       }
+    ],
+    "extraFiles": [
+      {
+        "from": "node_modules/@ffmpeg/core",
+        "to": "resources/app.asar.unpacked/node_modules/@ffmpeg/core",
+        "filter": ["*.wasm", "*.js", "*.json"]
+      }
+    ],
+    "asarUnpack": [
+      "node_modules/@ffmpeg/core"
     ],
     "win": {
       "target": "nsis",

@@ -8,6 +8,7 @@ require('dotenv').config();
 const whisperApi = require('./src/whisper-api');
 const keyboardSim = require('./src/keyboard-sim');
 const settings = require('./src/settings');
+const ffmpegUtils = require('./src/ffmpeg-utils');
 
 // Get path to settings file
 const SETTINGS_FILE_PATH = path.join(__dirname, 'settings.json');
@@ -75,8 +76,18 @@ function createWindow() {
 }
 
 // This method will be called when Electron has finished initialization
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   createWindow();
+
+  // Preload FFmpeg in the background
+  console.log('Preloading FFmpeg...');
+  try {
+    await ffmpegUtils.ensureFFmpegLoaded();
+    console.log('FFmpeg preloaded successfully');
+  } catch (err) {
+    console.error('Failed to preload FFmpeg:', err);
+    console.error('FFmpeg error details:', err.stack || err);
+  }
 
   // Initialize API with Groq API key from environment variable
   whisperApi.initAPI(null, process.env.GROQ_API_KEY);
@@ -129,8 +140,11 @@ app.on('window-all-closed', function () {
 });
 
 // Make sure we properly quit the app when explicitly asked to
-app.on('before-quit', () => {
+app.on('before-quit', async () => {
   app.isQuitting = true;
+  
+  // Clean up FFmpeg resources
+  await ffmpegUtils.cleanup();
 });
 
 // Unregister all shortcuts when quitting

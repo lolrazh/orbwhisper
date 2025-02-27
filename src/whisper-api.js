@@ -6,6 +6,7 @@ const { OpenAI } = require('openai');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const ffmpegUtils = require('./ffmpeg-utils');
 
 // Initialize variables
 let openaiGroq;         // For Groq endpoint with OpenAI-compatible API
@@ -13,6 +14,7 @@ let isRecording = false;
 let audioFilePath = '';
 let audioChunks = []; 
 let useFallbackMode = false; // Flag for fallback mode
+let ffmpegPreloaded = false; // Track if FFmpeg is preloaded
 
 // Initialize the API client with API key
 function initAPI(openaiApiKey, groqApiKey) {
@@ -25,6 +27,20 @@ function initAPI(openaiApiKey, groqApiKey) {
         baseURL: 'https://api.groq.com/openai/v1', // Base URL for Groq API
       });
       console.log('Groq client initialized successfully');
+      
+      // Preload FFmpeg in the background
+      if (!ffmpegPreloaded) {
+        console.log('Preloading FFmpeg from whisper-api module...');
+        ffmpegUtils.ensureFFmpegLoaded()
+          .then(() => {
+            ffmpegPreloaded = true;
+            console.log('FFmpeg preloaded successfully from whisper-api module');
+          })
+          .catch(err => {
+            console.error('Failed to preload FFmpeg from whisper-api module:', err);
+          });
+      }
+      
       return true;
     } catch (err) {
       console.error('Error initializing Groq client:', err);
@@ -56,7 +72,7 @@ function startRecording() {
       
       // Create a temporary file path for the final audio (as fallback only)
       const tmpDir = os.tmpdir();
-      audioFilePath = path.join(tmpDir, `whisper_recording_${Date.now()}.wav`);
+      audioFilePath = path.join(tmpDir, `whisper_recording_${Date.now()}.flac`); // Changed to .flac
       
       // Mark as recording and resolve
       isRecording = true;
@@ -116,7 +132,13 @@ function stopRecording() {
   return true;
 }
 
-// Transcribe audio using Groq API - optimized to work with in-memory buffer
+// Function to handle fallback mode (for testing only)
+function transcribeFallbackAudio() {
+  console.log('Using fallback transcription mode');
+  return { text: "This is a fallback transcription for testing. The real API is not available." };
+}
+
+// Transcribe audio using Groq API - optimized to work with FLAC format
 async function transcribeAudio() {
   // If in fallback mode, return dummy transcription
   if (useFallbackMode) {
@@ -133,14 +155,23 @@ async function transcribeAudio() {
     // Combine all chunks into a single buffer
     const audioBuffer = Buffer.concat(audioChunks);
     
-    // Create temp file only if needed by Groq API (some APIs require a file)
-    // Otherwise, we'd use a memory stream or direct buffer
-    fs.writeFileSync(audioFilePath, audioBuffer);
+    // Make sure FFmpeg is loaded before conversion
+    if (!ffmpegPreloaded) {
+      console.log('Loading FFmpeg on demand...');
+      await ffmpegUtils.ensureFFmpegLoaded();
+      ffmpegPreloaded = true;
+    }
     
-    // Create a readable stream for the audio file - still needed for OpenAI SDK structure
-    const audioFile = fs.createReadStream(audioFilePath);
+    // Use FFmpeg to convert to optimized FLAC format
+    const { buffer: flacBuffer, path: flacPath } = await ffmpegUtils.convertToOptimizedFlac(audioBuffer);
     
-    // Call Groq API (using OpenAI-compatible interface)
+    // Set the audio file path for cleanup later
+    audioFilePath = flacPath;
+    
+    // Create a readable stream for the FLAC file
+    const audioFile = fs.createReadStream(flacPath);
+    
+    // Call Groq API with optimized FLAC audio
     const transcription = await openaiGroq.audio.transcriptions.create({
       file: audioFile,
       model: "distil-whisper-large-v3-en", // Distil model for English only
@@ -169,70 +200,42 @@ async function transcribeAudio() {
   }
 }
 
-// Fallback transcription function (for demo/testing)
-async function transcribeFallbackAudio() {
-  return new Promise((resolve) => {
-    console.log('Using fallback transcription mode');
-    
-    // List of possible phrases for testing
-    const dummyPhrases = [
-      "This is a test of the dictation system in fallback mode.",
-      "Hello world, I'm using OrbWhisper for dictation.",
-      "The quick brown fox jumps over the lazy dog.",
-      "Voice dictation can help increase productivity substantially.",
-      "This is a placeholder response while in fallback mode."
-    ];
-    
-    // Simulate a processing delay
-    setTimeout(() => {
-      const randomIndex = Math.floor(Math.random() * dummyPhrases.length);
-      resolve({
-        text: dummyPhrases[randomIndex]
-      });
-    }, 1000);
-  });
-}
-
-// Get dictation text - stops recording and transcribes
+// Function to retrieve dictation text - main function called by IPC
 async function getDictationText() {
-  if (isRecording) {
-    // Stop recording to process the audio
-    stopRecording();
+  try {
+    // Finalize recording process
+    await finalizeRecording();
     
-    // No need to wait as long since we're not doing file I/O
-    // Just a small delay to ensure any final processing completes
-    await new Promise(resolve => setTimeout(resolve, 250));
+    // Use Groq API to transcribe
+    const result = await transcribeAudio();
     
-    // Transcribe the audio
-    const result = await transcribeAudio();
-    return result;
-  } else if (audioChunks.length > 0) {
-    // We might already have stopped recording but have audio data
-    const result = await transcribeAudio();
-    return result;
-  } else {
-    return { error: "No audio data available" };
+    // Handle errors
+    if (result.error) {
+      return { error: result.error, text: null };
+    }
+    
+    // Return the transcribed text
+    console.log('Dictation text result:', result);
+    return { 
+      text: result.text, 
+      error: null 
+    };
+  } catch (err) {
+    console.error('Error retrieving dictation text:', err);
+    return {
+      text: null,
+      error: err.message || "Failed to retrieve dictation text"
+    };
   }
-}
-
-// Helper function for testing - allows setting the audio file path directly
-// This is not used in production, only for testing
-function _setAudioFilePathForTesting(filePath) {
-  if (fs.existsSync(filePath)) {
-    audioFilePath = filePath;
-    return true;
-  }
-  return false;
 }
 
 module.exports = {
   initAPI,
-  initOpenAI, // Keep for backward compatibility
+  initOpenAI,
   startRecording,
-  stopRecording,
   addAudioChunk,
   finalizeRecording,
+  stopRecording,
   transcribeAudio,
-  getDictationText,
-  _setAudioFilePathForTesting // Export for testing purposes only
+  getDictationText
 }; 
