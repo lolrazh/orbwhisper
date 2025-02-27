@@ -23,6 +23,12 @@ document.addEventListener('DOMContentLoaded', () => {
   let isDictating = false;
   let isPasting = false;
   
+  // Performance tracking
+  let dictationStartTime = 0;
+  let dictationStopTime = 0;
+  let transcriptionStartTime = 0;
+  let transcriptionEndTime = 0;
+  
   // Track hotkey configuration
   let currentKeyCombo = '';
   
@@ -679,10 +685,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     try {
-      // Use smaller chunks (500ms) for more frequent processing
-      // This helps capture the end of utterances more reliably
-      mediaRecorder.start(500);
-      console.log('WebRTC recording started with 500ms chunks');
+      // Use larger chunks (2000ms) to reduce IPC overhead
+      // This significantly reduces the number of IPC calls and chunk processing overhead
+      mediaRecorder.start(2000);
+      console.log('WebRTC recording started with 2000ms chunks');
       return true;
     } catch (error) {
       console.error('Error starting WebRTC recording:', error);
@@ -701,8 +707,8 @@ document.addEventListener('DOMContentLoaded', () => {
       mediaRecorder.requestData();
       
       mediaRecorder.addEventListener('stop', async () => {
-        // Add a small delay to ensure all chunks are processed
-        await new Promise(r => setTimeout(r, 500));
+        // Reduce delay to just enough time to capture final chunk
+        await new Promise(r => setTimeout(r, 150));
         
         // Finalize the recording in the main process
         try {
@@ -743,6 +749,9 @@ document.addEventListener('DOMContentLoaded', () => {
     isDictating = !isDictating;
     
     if (isDictating) {
+      // Start performance timing
+      dictationStartTime = performance.now();
+      
       // Expand the UI
       appContainer.classList.remove('collapsed');
       appContainer.classList.add('recording'); // Add recording class to hide status text
@@ -778,21 +787,37 @@ document.addEventListener('DOMContentLoaded', () => {
       isPasting = true;
       statusText.textContent = 'Processing...';
       
+      // Record stop time for performance tracking
+      dictationStopTime = performance.now();
+      
       // Now that UI is updated, stop recording
       console.log('Stopping recording and capturing final audio data...');
       await stopWebRTCRecording();
       
+      // Start transcription timing
+      transcriptionStartTime = performance.now();
+      
       // Then get transcription via main process
       window.api.stopRecordingAndTranscribe()
         .then(result => {
+          // Record transcription end time
+          transcriptionEndTime = performance.now();
+          
           if (result && result.text) {
             // Show the transcribed text briefly
             statusText.textContent = `Typing: "${result.text.substring(0, 20)}${result.text.length > 20 ? '...' : ''}"`;
             
-            // For debugging, show the transcribed text
+            // For debugging, show the transcribed text and performance metrics
             if (isDev && transcribedTextElement) {
               const timestamp = new Date().toLocaleTimeString();
-              transcribedTextElement.textContent = `[${timestamp}] ${result.text}\n${transcribedTextElement.textContent}`;
+              const recordingDuration = ((dictationStopTime - dictationStartTime) / 1000).toFixed(2);
+              const processingTime = ((transcriptionEndTime - dictationStopTime) / 1000).toFixed(2);
+              const totalTime = ((transcriptionEndTime - dictationStartTime) / 1000).toFixed(2);
+              
+              transcribedTextElement.textContent = 
+                `[${timestamp}] "${result.text}"\n` +
+                `Recording: ${recordingDuration}s | Processing: ${processingTime}s | Total: ${totalTime}s\n` +
+                transcribedTextElement.textContent;
             }
             
             // Simulate typing the text
@@ -814,8 +839,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 isPasting = false;
                 resetStatusTextAfterDelay();
               });
-          } else if (result.error) {
-            statusText.textContent = `Error: ${result.error}`;
+          } else {
+            // Error case
+            const errorMsg = result && result.error ? result.error : 'Transcription failed';
+            console.error('Transcription error:', errorMsg);
+            statusText.textContent = `Error: ${errorMsg}`;
             bubble.classList.remove('pasting');
             isPasting = false;
             resetStatusTextAfterDelay();

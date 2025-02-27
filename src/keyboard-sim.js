@@ -65,11 +65,11 @@ async function typeText(text) {
     // Store original clipboard content
     const originalClipboard = clipboard.readText();
     
-    // Set the text to clipboard
+    // Set the text to clipboard - minimize delay
     clipboard.writeText(text);
     
-    // Wait just enough for the clipboard to update
-    await sleep(150);
+    // Reduce clipboard wait time to minimum viable
+    await sleep(75);
     
     // Actually simulate Ctrl+V (paste)
     console.log('Simulating Ctrl+V keystroke to paste text');
@@ -80,8 +80,8 @@ async function typeText(text) {
       return { error: "Failed to simulate paste: " + pasteError.message };
     }
     
-    // Wait just enough after pasting before restoring clipboard
-    await sleep(250);
+    // Reduce post-paste wait time
+    await sleep(100);
     
     // Restore original clipboard content
     clipboard.writeText(originalClipboard);

@@ -54,7 +54,7 @@ function startRecording() {
       // Reset audio chunks array
       audioChunks = [];
       
-      // Create a temporary file path for the final audio
+      // Create a temporary file path for the final audio (as fallback only)
       const tmpDir = os.tmpdir();
       audioFilePath = path.join(tmpDir, `whisper_recording_${Date.now()}.wav`);
       
@@ -91,37 +91,19 @@ async function addAudioChunk(chunk) {
   }
 }
 
-// Finalize recording by saving audio data to file
+// Finalize recording - now optimized to avoid unnecessary file operations
 async function finalizeRecording() {
   if (!isRecording || audioChunks.length === 0) return false;
   
-  try {
-    console.log(`Finalizing recording with ${audioChunks.length} chunks...`);
-    
-    // Combine all chunks into a single buffer
-    const audioBuffer = Buffer.concat(audioChunks);
-    
-    // Write to the temporary file
-    fs.writeFileSync(audioFilePath, audioBuffer);
-    console.log(`Audio data saved to ${audioFilePath} (${audioBuffer.length} bytes)`);
-    
-    // Verify the file was written correctly
-    if (!fs.existsSync(audioFilePath)) {
-      console.error('Audio file was not created properly');
-      return false;
-    }
-    
-    // Add a small delay to ensure file system operations complete
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Reset the chunks array to free memory
-    audioChunks = [];
-    
-    return true;
-  } catch (err) {
-    console.error('Error finalizing audio recording:', err);
-    return false;
-  }
+  console.log(`Finalizing recording with ${audioChunks.length} chunks...`);
+  
+  // We don't need to write to file anymore unless we're in fallback mode
+  // The actual transcription will use the in-memory audio data
+  
+  // Reset recording state but keep chunks for transcription
+  isRecording = false;
+  
+  return true;
 }
 
 // Stop recording
@@ -134,21 +116,28 @@ function stopRecording() {
   return true;
 }
 
-// Transcribe audio using Groq API
+// Transcribe audio using Groq API - optimized to work with in-memory buffer
 async function transcribeAudio() {
   // If in fallback mode, return dummy transcription
   if (useFallbackMode) {
     return transcribeFallbackAudio();
   }
   
-  if (!audioFilePath || !fs.existsSync(audioFilePath)) {
-    return { error: "No audio recording found" };
+  if (audioChunks.length === 0) {
+    return { error: "No audio data available" };
   }
   
   try {
-    console.log(`Transcribing audio file: ${audioFilePath} using Groq API`);
+    console.log(`Transcribing audio data from memory (${audioChunks.length} chunks)`);
     
-    // Create a readable stream for the audio file
+    // Combine all chunks into a single buffer
+    const audioBuffer = Buffer.concat(audioChunks);
+    
+    // Create temp file only if needed by Groq API (some APIs require a file)
+    // Otherwise, we'd use a memory stream or direct buffer
+    fs.writeFileSync(audioFilePath, audioBuffer);
+    
+    // Create a readable stream for the audio file - still needed for OpenAI SDK structure
     const audioFile = fs.createReadStream(audioFilePath);
     
     // Call Groq API (using OpenAI-compatible interface)
@@ -169,6 +158,9 @@ async function transcribeAudio() {
     } catch (err) {
       console.error('Error deleting audio file:', err);
     }
+    
+    // Clear audio chunks to free memory
+    audioChunks = [];
     
     return transcription;
   } catch (err) {
@@ -207,17 +199,19 @@ async function getDictationText() {
     // Stop recording to process the audio
     stopRecording();
     
-    // Wait longer for any final chunks to be processed
-    if (!useFallbackMode) {
-      console.log('Waiting for final audio chunks to be processed...');
-      await new Promise(resolve => setTimeout(resolve, 750));
-    }
+    // No need to wait as long since we're not doing file I/O
+    // Just a small delay to ensure any final processing completes
+    await new Promise(resolve => setTimeout(resolve, 250));
     
     // Transcribe the audio
     const result = await transcribeAudio();
     return result;
+  } else if (audioChunks.length > 0) {
+    // We might already have stopped recording but have audio data
+    const result = await transcribeAudio();
+    return result;
   } else {
-    return { error: "Not recording" };
+    return { error: "No audio data available" };
   }
 }
 
